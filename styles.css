@@ -324,3 +324,27 @@ a.contact__v:hover { background-size: 100% 1px; }
   .contact__grid { grid-template-columns: 1fr; }
   .footer { flex-direction: column; text-align: center; }
 }
+
+/* Part of 99 */
+.family__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(16px, 2vw, 28px);
+  margin-top: clamp(48px, 8vh, 88px);
+}
+.house {
+  border: 1px solid var(--line);
+  padding: clamp(28px, 4vw, 52px);
+  background: linear-gradient(160deg, #111, #050505);
+}
+.house:first-child { border-color: rgba(255, 255, 255, 0.32); }
+.house__tag { margin: 0 0 28px; font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); }
+.house h3 { font-family: var(--serif); font-size: clamp(2.4rem, 5vw, 4rem); line-height: 1; }
+.house__lead { margin: 10px 0 28px; font-family: var(--serif); font-style: italic; font-size: 1.15rem; color: #c9c6c0; }
+.house ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.house li { padding: 12px 0; border-bottom: 1px solid var(--line); color: #c9c6c0; }
+.family__note { margin: clamp(36px, 6vh, 64px) 0 0; max-width: 46ch; color: var(--muted); font-size: 1.05rem; }
+
+@media (max-width: 680px) {
+  .family__grid { grid-template-columns: 1fr; }
+}

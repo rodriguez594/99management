@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>99MGMT — Artist Management</title>
-  <meta name="description" content="99MGMT is a Copenhagen-based artist management agency handling management, distribution and promotion. Part of 99.">
+  <title>99MGMT | Artist Management</title>
+  <meta name="description" content="99MGMT is an artist management company handling management, distribution and promotion. Part of 99.">
   <meta name="theme-color" content="#000000">
   <meta property="og:title" content="99MGMT">
-  <meta property="og:description" content="Artist management, distribution &amp; promotion. Part of 99.">
+  <meta property="og:description" content="Artist management, distribution and promotion. Part of 99.">
   <meta property="og:image" content="assets/og.png">
   <meta property="og:type" content="website">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
@@ -19,86 +19,85 @@
 </head>
 <body>
   <header class="nav" id="nav">
-    <a href="#top" class="nav__brand" aria-label="99MGMT home">
+    <a href="#top" class="nav__brand" aria-label="99MGMT">
       <img src="assets/mark-160.png" alt="" width="44" height="40">
       <span>MGMT</span>
     </a>
-    <button class="nav__toggle" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
-      <span></span><span></span>
-    </button>
     <nav class="nav__links" id="menu">
-      <a href="#about">About</a>
-      <a href="#services">Services</a>
-      <a href="#roster">Roster</a>
+      <a href="#about" data-i18n="nav.about">About</a>
+      <a href="#services" data-i18n="nav.services">Services</a>
+      <a href="#roster" data-i18n="nav.roster">Roster</a>
       <a href="#family">99</a>
-      <a href="#contact">Contact</a>
+      <a href="#contact" data-i18n="nav.contact">Contact</a>
     </nav>
+    <div class="nav__end">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="da" aria-pressed="false">DA</button>
+      </div>
+      <button class="nav__toggle" aria-label="Menu" aria-expanded="false" aria-controls="menu">
+        <span></span><span></span>
+      </button>
+    </div>
   </header>
 
   <main id="top">
     <section class="hero">
-      <img class="hero__mark reveal" src="assets/mark.png" alt="99MGMT logo" width="959" height="882">
-      <h1 class="hero__title reveal">Artist management, distribution &amp; promotion.</h1>
-      <p class="hero__meta reveal">Copenhagen &nbsp;·&nbsp; Worldwide</p>
-      <a href="#roster" class="hero__scroll" aria-label="Scroll to roster">Scroll</a>
+      <img class="hero__mark reveal" src="assets/mark.png" alt="99MGMT" width="959" height="882">
+      <h1 class="hero__title reveal" data-i18n="hero.title">Management for artists, creators &amp; talent.</h1>
+      <p class="hero__meta reveal" data-i18n="hero.meta">Copenhagen</p>
+      <a href="#about" class="hero__scroll" data-i18n="hero.scroll">Scroll</a>
     </section>
 
     <section class="section about" id="about">
-      <p class="label">01 — About</p>
+      <p class="label" data-i18n="nav.about">About</p>
       <div class="about__body">
-        <h2 class="display reveal">We build careers, not campaigns.</h2>
+        <h2 class="display reveal">99MGMT</h2>
         <div class="about__text reveal">
-          <p>99MGMT is the artist management arm of 99. We represent a focused roster of artists and keep it small on purpose, so every name gets the attention, strategy and network it deserves.</p>
-          <p>We handle the business side of a career — management, distribution and promotion — so our artists can focus on the music.</p>
+          <p data-i18n="about.p1">99MGMT is the management company under 99. We work with a small roster of artists, so each one gets proper attention.</p>
+          <p data-i18n="about.p2">We take care of the business side: management, distribution, promotion and partnerships. Video and music production is handled by our sister company 99ENT.</p>
         </div>
       </div>
-      <dl class="stats reveal">
-        <div><dt>Part of</dt><dd>99</dd></div>
-        <div><dt>Based in</dt><dd>Copenhagen</dd></div>
-        <div><dt>Reach</dt><dd>Global</dd></div>
-      </dl>
     </section>
 
     <section class="section services" id="services">
-      <p class="label">02 — Services</p>
+      <p class="label" data-i18n="nav.services">Services</p>
       <ol class="service-list">
         <li class="reveal">
           <span class="service-list__num">01</span>
-          <h3>Artist Management</h3>
-          <p>Day-to-day management, career planning and long-term strategy.</p>
+          <h3 data-i18n="s1.t">Artist Management</h3>
+          <p data-i18n="s1.d">Day-to-day management, career planning and long-term strategy.</p>
         </li>
         <li class="reveal">
           <span class="service-list__num">02</span>
-          <h3>Distribution</h3>
-          <p>Getting releases onto every streaming platform and store — delivered, registered and on time.</p>
+          <h3 data-i18n="s2.t">Distribution</h3>
+          <p data-i18n="s2.d">Releases delivered to streaming services and stores, with registration and metadata handled.</p>
         </li>
         <li class="reveal">
           <span class="service-list__num">03</span>
-          <h3>Promotion</h3>
-          <p>Release campaigns, playlist pitching, press and social strategy that build an audience.</p>
+          <h3 data-i18n="s3.t">Promotion</h3>
+          <p data-i18n="s3.d">Release campaigns, playlist pitching, press and social media.</p>
         </li>
         <li class="reveal">
           <span class="service-list__num">04</span>
-          <h3>Partnerships &amp; Bookings</h3>
-          <p>Brand deals, shows and appearances — negotiated and coordinated.</p>
+          <h3 data-i18n="s4.t">Partnerships &amp; Bookings</h3>
+          <p data-i18n="s4.d">Brand deals, concerts and appearances.</p>
         </li>
       </ol>
     </section>
 
     <section class="section roster" id="roster">
-      <div class="roster__head">
-        <p class="label">03 — Roster</p>
-        <h2 class="display reveal">The 99.</h2>
-      </div>
+      <p class="label" data-i18n="nav.roster">Roster</p>
       <!--
         Edit the roster here: change the name (h3), role (p) and initial for each card.
+        Roles with data-i18n="role.artist" are translated automatically; for other roles remove the attribute.
         To add a photo, put it in assets/roster/ and add <img src="assets/roster/name.jpg" alt="Name">
         inside .card__media.
       -->
       <div class="roster__grid">
         <article class="card reveal">
           <div class="card__media"><span class="card__initial">A</span></div>
-          <div class="card__info"><h3>Artist Name</h3><p>Artist</p></div>
+          <div class="card__info"><h3>Artist Name</h3><p data-i18n="role.artist">Artist</p></div>
         </article>
         <article class="card reveal">
           <div class="card__media"><span class="card__initial">B</span></div>
@@ -106,11 +105,11 @@
         </article>
         <article class="card reveal">
           <div class="card__media"><span class="card__initial">C</span></div>
-          <div class="card__info"><h3>Artist Name</h3><p>Artist</p></div>
+          <div class="card__info"><h3>Artist Name</h3><p data-i18n="role.artist">Artist</p></div>
         </article>
         <article class="card reveal">
           <div class="card__media"><span class="card__initial">D</span></div>
-          <div class="card__info"><h3>Artist Name</h3><p>Artist</p></div>
+          <div class="card__info"><h3>Artist Name</h3><p data-i18n="role.artist">Artist</p></div>
         </article>
         <article class="card reveal">
           <div class="card__media"><span class="card__initial">E</span></div>
@@ -118,56 +117,57 @@
         </article>
         <article class="card reveal">
           <div class="card__media"><span class="card__initial">F</span></div>
-          <div class="card__info"><h3>Artist Name</h3><p>Artist</p></div>
+          <div class="card__info"><h3>Artist Name</h3><p data-i18n="role.artist">Artist</p></div>
         </article>
       </div>
     </section>
 
     <section class="section family" id="family">
-      <p class="label">04 — Part of 99</p>
-      <h2 class="display reveal">One family, two houses.</h2>
+      <p class="label" data-i18n="family.label">Part of 99</p>
       <div class="family__grid">
         <article class="house reveal">
-          <p class="house__tag">You are here</p>
+          <p class="house__tag" data-i18n="family.here">This site</p>
           <h3>99MGMT</h3>
-          <p class="house__lead">Artist management</p>
+          <p class="house__lead" data-i18n="family.mgmt">Artist management</p>
           <ul>
-            <li>Management &amp; career strategy</li>
+            <li data-i18n="family.mgmt1">Management and career strategy</li>
             <li>Distribution</li>
-            <li>Promotion &amp; marketing</li>
-            <li>Partnerships &amp; bookings</li>
+            <li data-i18n="family.mgmt3">Promotion</li>
+            <li data-i18n="family.mgmt4">Partnerships and bookings</li>
           </ul>
+          <a class="house__link" href="https://instagram.com/99mgmt_" target="_blank" rel="noopener">@99mgmt_</a>
         </article>
         <article class="house reveal">
-          <p class="house__tag">Sister company</p>
+          <p class="house__tag" data-i18n="family.sister">Sister company</p>
           <h3>99ENT</h3>
-          <p class="house__lead">99 Entertainment — video &amp; music production</p>
+          <p class="house__lead" data-i18n="family.ent">Video and music production</p>
           <ul>
-            <li>Music videos</li>
-            <li>Promo &amp; campaign videos</li>
-            <li>Music production</li>
-            <li>Mixing &amp; mastering</li>
+            <li data-i18n="family.ent1">Music videos</li>
+            <li data-i18n="family.ent2">Promo videos</li>
+            <li data-i18n="family.ent3">Music production</li>
+            <li data-i18n="family.ent4">Mixing and mastering</li>
           </ul>
+          <a class="house__link" href="https://instagram.com/the99ent" target="_blank" rel="noopener">@the99ent</a>
+        </article>
+        <article class="house house--soon reveal">
+          <p class="house__tag" data-i18n="family.soon">Coming soon</p>
+          <h3>99WRLDWIDE</h3>
+          <p class="house__lead" data-i18n="family.wrld">Waiting for its first project.</p>
+          <a class="house__link" href="https://instagram.com/99wrldwide" target="_blank" rel="noopener">@99wrldwide</a>
         </article>
       </div>
-      <p class="family__note reveal">Together we take an artist from the studio to the stage — 99ENT makes the work, 99MGMT gets it heard.</p>
     </section>
 
     <section class="section contact" id="contact">
-      <p class="label">05 — Contact</p>
-      <h2 class="contact__title reveal">Let’s talk.</h2>
+      <h2 class="contact__title reveal" data-i18n="nav.contact">Contact</h2>
       <div class="contact__grid reveal">
         <div>
-          <p class="contact__k">General &amp; bookings</p>
-          <a class="contact__v" href="mailto:contact@99management.dk">contact@99management.dk</a>
+          <p class="contact__k" data-i18n="contact.email">Email</p>
+          <a class="contact__v" href="mailto:99mgmt1@gmail.com">99mgmt1@gmail.com</a>
         </div>
         <div>
           <p class="contact__k">Instagram</p>
-          <a class="contact__v" href="https://instagram.com/99mgmt" target="_blank" rel="noopener">@99mgmt</a>
-        </div>
-        <div>
-          <p class="contact__k">Location</p>
-          <p class="contact__v">Copenhagen, Denmark</p>
+          <a class="contact__v" href="https://instagram.com/99mgmt_" target="_blank" rel="noopener">@99mgmt_</a>
         </div>
       </div>
     </section>
@@ -175,8 +175,8 @@
 
   <footer class="footer">
     <img src="assets/mark-160.png" alt="" width="33" height="30">
-    <p>© <span id="year">2026</span> 99MGMT — part of 99. All rights reserved.</p>
-    <a href="#top">Back to top ↑</a>
+    <p>© <span id="year">2026</span> 99MGMT<span data-i18n="footer.part">, part of 99</span></p>
+    <a href="#top" data-i18n="footer.top">Back to top</a>
   </footer>
 
   <script src="main.js"></script>

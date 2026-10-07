@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=dev">
 </head>
 <body>
   <header class="nav" id="nav">
@@ -31,10 +31,30 @@
       <a href="#contact" data-i18n="nav.contact">Contact</a>
     </nav>
     <div class="nav__end">
-      <div class="lang" role="group" aria-label="Language">
-        <button type="button" data-lang="en" aria-pressed="true">EN</button>
-        <button type="button" data-lang="da" aria-pressed="false">DA</button>
-      </div>
+      <button type="button" class="flag" data-lang="en" aria-label="Skift til dansk">
+        <span class="flag__inner">
+          <span class="flag__face flag__face--en">
+            <svg viewBox="0 0 60 30" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <clipPath id="uk-s"><path d="M0,0 v30 h60 v-30 z"/></clipPath>
+              <clipPath id="uk-t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
+              <g clip-path="url(#uk-s)">
+                <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
+                <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
+                <path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#uk-t)" stroke="#C8102E" stroke-width="4"/>
+                <path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/>
+                <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/>
+              </g>
+            </svg>
+          </span>
+          <span class="flag__face flag__face--da">
+            <svg viewBox="0 0 37 28" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <rect width="37" height="28" fill="#C8102E"/>
+              <rect x="12" width="4" height="28" fill="#fff"/>
+              <rect y="12" width="37" height="4" fill="#fff"/>
+            </svg>
+          </span>
+        </span>
+      </button>
       <button class="nav__toggle" aria-label="Menu" aria-expanded="false" aria-controls="menu">
         <span></span><span></span>
       </button>
@@ -179,6 +199,6 @@
     <a href="#top" data-i18n="footer.top">Back to top</a>
   </footer>
 
-  <script src="main.js"></script>
+  <script src="main.js?v=dev"></script>
 </body>
 </html>

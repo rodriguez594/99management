@@ -87,7 +87,8 @@ document.documentElement.classList.remove('no-js');
   var descMeta = document.querySelector('meta[name="description"]');
   var en = { 'meta.title': document.title, 'meta.description': descMeta.content };
   nodes.forEach(function (el) { en[el.dataset.i18n] = el.textContent; });
-  var langButtons = document.querySelectorAll('.lang button');
+  var flag = document.querySelector('.flag');
+  var current = 'en';
 
   function setLang(lang) {
     var dict = lang === 'da' ? da : en;
@@ -98,14 +99,14 @@ document.documentElement.classList.remove('no-js');
     document.title = dict['meta.title'];
     descMeta.content = dict['meta.description'];
     document.documentElement.lang = lang;
-    langButtons.forEach(function (b) {
-      b.setAttribute('aria-pressed', String(b.dataset.lang === lang));
-    });
+    flag.dataset.lang = lang;
+    flag.setAttribute('aria-label', lang === 'da' ? 'Switch to English' : 'Skift til dansk');
+    current = lang;
     try { localStorage.setItem('lang', lang); } catch (e) {}
   }
 
-  langButtons.forEach(function (b) {
-    b.addEventListener('click', function () { setLang(b.dataset.lang); });
+  flag.addEventListener('click', function () {
+    setLang(current === 'da' ? 'en' : 'da');
   });
 
   var saved = null;

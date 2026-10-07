@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>99MGMT — Talent Management</title>
+  <meta name="description" content="99MGMT is a Copenhagen-based management agency representing artists, creators and talent.">
+  <meta name="theme-color" content="#000000">
+  <meta property="og:title" content="99MGMT">
+  <meta property="og:description" content="Management for artists, creators and talent.">
+  <meta property="og:image" content="assets/og.png">
+  <meta property="og:type" content="website">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav" id="nav">
+    <a href="#top" class="nav__brand" aria-label="99MGMT home">
+      <img src="assets/mark-160.png" alt="" width="44" height="40">
+      <span>MGMT</span>
+    </a>
+    <button class="nav__toggle" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+      <span></span><span></span>
+    </button>
+    <nav class="nav__links" id="menu">
+      <a href="#about">About</a>
+      <a href="#services">Services</a>
+      <a href="#roster">Roster</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <img class="hero__mark reveal" src="assets/mark.png" alt="99MGMT logo" width="959" height="882">
+      <h1 class="hero__title reveal">Management for artists, creators &amp; talent.</h1>
+      <p class="hero__meta reveal">Copenhagen &nbsp;·&nbsp; Worldwide</p>
+      <a href="#roster" class="hero__scroll" aria-label="Scroll to roster">Scroll</a>
+    </section>
+
+    <section class="section about" id="about">
+      <p class="label">01 — About</p>
+      <div class="about__body">
+        <h2 class="display reveal">We build careers, not campaigns.</h2>
+        <div class="about__text reveal">
+          <p>99MGMT is an independent management agency representing a focused roster of artists and creators. We keep the roster small on purpose, so every name gets the attention, strategy and network it deserves.</p>
+          <p>From first release to sold-out shows, from brand deals to long-term partnerships — we handle the business so our talent can focus on the work.</p>
+        </div>
+      </div>
+      <dl class="stats reveal">
+        <div><dt>Roster</dt><dd>Hand-picked</dd></div>
+        <div><dt>Based in</dt><dd>Copenhagen</dd></div>
+        <div><dt>Reach</dt><dd>Global</dd></div>
+      </dl>
+    </section>
+
+    <section class="section services" id="services">
+      <p class="label">02 — Services</p>
+      <ol class="service-list">
+        <li class="reveal">
+          <span class="service-list__num">01</span>
+          <h3>Artist Management</h3>
+          <p>Day-to-day management, career planning and long-term strategy.</p>
+        </li>
+        <li class="reveal">
+          <span class="service-list__num">02</span>
+          <h3>Brand Partnerships</h3>
+          <p>Sponsorships, campaigns and collaborations with the right brands.</p>
+        </li>
+        <li class="reveal">
+          <span class="service-list__num">03</span>
+          <h3>Bookings &amp; Live</h3>
+          <p>Shows, festivals, tours and appearances — negotiated and coordinated.</p>
+        </li>
+        <li class="reveal">
+          <span class="service-list__num">04</span>
+          <h3>Content &amp; Creative</h3>
+          <p>Release rollouts, visual identity, social strategy and production.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="section roster" id="roster">
+      <div class="roster__head">
+        <p class="label">03 — Roster</p>
+        <h2 class="display reveal">The 99.</h2>
+      </div>
+      <!--
+        Edit the roster here. For each person:
+          - data-name: their name
+          - data-role: e.g. "Artist", "Producer", "Creator"
+          - optional: add <img src="assets/roster/name.jpg" alt="..."> inside .card__media
+      -->
+      <div class="roster__grid">
+        <article class="card reveal">
+          <div class="card__media"><span class="card__initial">A</span></div>
+          <div class="card__info"><h3>Artist Name</h3><p>Artist</p></div>
+        </article>
+        <article class="card reveal">
+          <div class="card__media"><span class="card__initial">B</span></div>
+          <div class="card__info"><h3>Artist Name</h3><p>Producer</p></div>
+        </article>
+        <article class="card reveal">
+          <div class="card__media"><span class="card__initial">C</span></div>
+          <div class="card__info"><h3>Artist Name</h3><p>Creator</p></div>
+        </article>
+        <article class="card reveal">
+          <div class="card__media"><span class="card__initial">D</span></div>
+          <div class="card__info"><h3>Artist Name</h3><p>Artist</p></div>
+        </article>
+        <article class="card reveal">
+          <div class="card__media"><span class="card__initial">E</span></div>
+          <div class="card__info"><h3>Artist Name</h3><p>DJ</p></div>
+        </article>
+        <article class="card reveal">
+          <div class="card__media"><span class="card__initial">F</span></div>
+          <div class="card__info"><h3>Artist Name</h3><p>Creator</p></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section contact" id="contact">
+      <p class="label">04 — Contact</p>
+      <h2 class="contact__title reveal">Let’s talk.</h2>
+      <div class="contact__grid reveal">
+        <div>
+          <p class="contact__k">General &amp; bookings</p>
+          <a class="contact__v" href="mailto:contact@99management.dk">contact@99management.dk</a>
+        </div>
+        <div>
+          <p class="contact__k">Instagram</p>
+          <a class="contact__v" href="https://instagram.com/99mgmt" target="_blank" rel="noopener">@99mgmt</a>
+        </div>
+        <div>
+          <p class="contact__k">Location</p>
+          <p class="contact__v">Copenhagen, Denmark</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <img src="assets/mark-160.png" alt="" width="33" height="30">
+    <p>© <span id="year">2026</span> 99MGMT. All rights reserved.</p>
+    <a href="#top">Back to top ↑</a>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

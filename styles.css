@@ -392,11 +392,6 @@ a.contact__v:hover { background-size: 100% 1px; }
 }
 .btn:hover, .btn--solid { background: var(--text); color: var(--bg); }
 .btn--solid:hover { background: none; color: var(--text); }
-.campaign-on .hero__scroll { display: none; }
-.campaign-on .hero__mark { width: clamp(160px, min(34vw, 40svh), 420px); }
-.hero__cta { display: flex; flex-direction: column; align-items: center; gap: 18px; margin-top: 34px; }
-.hero__cta p { margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; font-size: 0.9rem; color: #c9c6c0; }
-.hero__cta-tag { font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text); align-self: center; }
 .signing .about__body { align-items: start; }
 .signing__list { list-style: none; margin: 8px 0 32px; padding: 0; border-top: 1px solid var(--line); }
 .signing__list li { padding: 12px 0; border-bottom: 1px solid var(--line); color: #c9c6c0; }

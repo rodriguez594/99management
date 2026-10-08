@@ -138,7 +138,7 @@ var CAMPAIGN_ON = false;
   // Artist campaign
   if (CAMPAIGN_ON || /[?&]campaign\b/.test(location.search)) {
     document.querySelectorAll('[data-campaign]').forEach(function (el) { el.hidden = false; });
-    document.documentElement.classList.add('campaign-on');
+    document.querySelector('.hero__scroll').setAttribute('href', '#signing');
   }
 
   // Application form: composes an email to 99MGMT

@@ -376,6 +376,30 @@ a.contact__v:hover { background-size: 100% 1px; }
   .family__grid { grid-template-columns: 1fr; }
 }
 
+/* Hall of Fame */
+.hof__intro { margin: 24px 0 clamp(40px, 7vh, 72px); max-width: 46ch; color: #c9c6c0; font-size: 1.05rem; }
+.hof__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.hof__list li {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 24px;
+  align-items: baseline;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--line);
+}
+.hof__list h3 { font-family: var(--serif); font-size: clamp(1.5rem, 2.8vw, 2.2rem); line-height: 1.1; }
+.hof__list h3 a { transition: opacity 0.25s; }
+.hof__list h3 a:hover { opacity: 0.7; }
+.hof__list p { margin: 0; color: #c9c6c0; }
+.hof__project { font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); text-align: right; }
+.hof__cta { margin: 40px 0 0; color: var(--muted); }
+.hof__cta a { color: var(--text); border-bottom: 1px solid currentColor; }
+
+@media (max-width: 680px) {
+  .hof__list li { grid-template-columns: 1fr; gap: 6px; }
+  .hof__project { text-align: left; }
+}
+
 /* Artist campaign */
 [data-campaign][hidden] { display: none; }
 .btn {

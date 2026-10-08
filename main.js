@@ -45,7 +45,8 @@ var CAMPAIGN_ON = false;
 
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  // Language switch. English text lives in the HTML; Danish is defined here.
+  // Language switch. English text lives in the HTML; Danish is defined here,
+  // or inline in a data-da attribute (used for Hall of Fame entries).
   var da = {
     'meta.title': '99MGMT | Artist management',
     'meta.description': '99MGMT er et artist management-selskab, der står for management, distribution og promovering. En del af 99.',
@@ -53,6 +54,11 @@ var CAMPAIGN_ON = false;
     'nav.services': 'Ydelser',
     'nav.roster': 'Roster',
     'nav.contact': 'Kontakt',
+    'nav.hof': 'Hall of Fame',
+    'hof.title': 'En særlig tak',
+    'hof.intro': 'De virksomheder og personer, der har hjulpet med at gøre vores projekter til virkelighed.',
+    'hof.cta': 'Vil du være en del af et projekt?',
+    'hof.cta2': 'Kontakt os',
     'hero.title': 'Management for kunstnere, skabere & talenter.',
     'hero.meta': 'København',
     'hero.scroll': 'Scroll',
@@ -110,6 +116,8 @@ var CAMPAIGN_ON = false;
   var descMeta = document.querySelector('meta[name="description"]');
   var en = { 'meta.title': document.title, 'meta.description': descMeta.content };
   nodes.forEach(function (el) { en[el.dataset.i18n] = el.textContent; });
+  var inline = document.querySelectorAll('[data-da]');
+  inline.forEach(function (el) { el.dataset.en = el.textContent; });
   var flag = document.querySelector('.flag');
   var current = 'en';
 
@@ -118,6 +126,9 @@ var CAMPAIGN_ON = false;
     nodes.forEach(function (el) {
       var t = dict[el.dataset.i18n];
       if (t != null) el.textContent = t;
+    });
+    inline.forEach(function (el) {
+      el.textContent = lang === 'da' ? el.dataset.da : el.dataset.en;
     });
     document.title = dict['meta.title'];
     descMeta.content = dict['meta.description'];

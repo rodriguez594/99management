@@ -1,5 +1,8 @@
 document.documentElement.classList.remove('no-js');
 
+// Set to true when the artist campaign goes live.
+var CAMPAIGN_ON = false;
+
 (function () {
   var nav = document.getElementById('nav');
   var toggle = nav.querySelector('.nav__toggle');
@@ -15,7 +18,7 @@ document.documentElement.classList.remove('no-js');
   function setOpen(open) {
     nav.classList.toggle('is-open', open);
     toggle.setAttribute('aria-expanded', String(open));
-        document.body.style.overflow = open ? 'hidden' : '';
+    document.body.style.overflow = open ? 'hidden' : '';
   }
   toggle.addEventListener('click', function () {
     setOpen(!nav.classList.contains('is-open'));
@@ -79,6 +82,19 @@ document.documentElement.classList.remove('no-js');
     'family.soon': 'Kommer snart',
     'family.wrld': 'Venter på sit første projekt.',
     'contact.email': 'E-mail',
+    'campaign.tag': 'Vi signer nu',
+    'campaign.text': 'Vi leder efter nye kunstnere til 99MGMT.',
+    'campaign.cta': 'Ansøg',
+    'apply.title': 'Ansøg hos 99MGMT',
+    'apply.intro': 'Vi dækker omkostningerne i en introduktionsperiode. Til gengæld tager vi en andel af din indtjening. Vilkårene aftales med hver enkelt kunstner.',
+    'apply.name': 'Dit navn',
+    'apply.artist': 'Kunstnernavn',
+    'apply.email': 'E-mail',
+    'apply.socials': 'Instagram / TikTok',
+    'apply.music': 'Link til din musik',
+    'apply.about': 'Om dig',
+    'apply.submit': 'Send ansøgning',
+    'apply.note': 'Dette åbner din mailapp med ansøgningen udfyldt. Du kan også skrive til os på Instagram:',
     'footer.part': ', en del af 99',
     'footer.top': 'Til toppen'
   };
@@ -112,4 +128,51 @@ document.documentElement.classList.remove('no-js');
   var saved = null;
   try { saved = localStorage.getItem('lang'); } catch (e) {}
   if (saved === 'da') setLang('da');
+
+  // Campaign banner
+  var banner = document.getElementById('banner');
+  var DISMISS_KEY = 'campaign-dismissed-1';
+  var preview = /[?&]campaign\b/.test(location.search);
+  var dismissed = false;
+  try { dismissed = localStorage.getItem(DISMISS_KEY) === '1'; } catch (e) {}
+
+  function setBannerHeight() {
+    var h = banner.hidden ? 0 : banner.offsetHeight;
+    document.documentElement.style.setProperty('--banner-h', h + 'px');
+  }
+  if ((CAMPAIGN_ON && !dismissed) || preview) banner.hidden = false;
+  setBannerHeight();
+  // Keep the nav below the banner when its height changes (resize, language switch)
+  if ('ResizeObserver' in window) new ResizeObserver(setBannerHeight).observe(banner);
+  else window.addEventListener('resize', setBannerHeight);
+  banner.querySelector('.banner__close').addEventListener('click', function () {
+    banner.hidden = true;
+    setBannerHeight();
+    try { localStorage.setItem(DISMISS_KEY, '1'); } catch (e) {}
+  });
+
+  // Application form: composes an email to 99MGMT
+  var dialog = document.getElementById('apply');
+  var form = document.getElementById('apply-form');
+  document.querySelectorAll('[data-apply]').forEach(function (b) {
+    b.addEventListener('click', function () { dialog.showModal(); });
+  });
+  dialog.querySelector('.apply__close').addEventListener('click', function () { dialog.close(); });
+  dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = form.elements;
+    var body = [
+      'Name: ' + f.name.value,
+      'Artist name: ' + f.artist.value,
+      'Email: ' + f.email.value,
+      'Instagram / TikTok: ' + f.socials.value,
+      'Music: ' + f.music.value,
+      '',
+      f.about.value
+    ].join('\n');
+    location.href = 'mailto:99mgmt1@gmail.com'
+      + '?subject=' + encodeURIComponent('Artist application: ' + f.artist.value)
+      + '&body=' + encodeURIComponent(body);
+  });
 })();

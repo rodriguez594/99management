@@ -18,6 +18,16 @@
   <link rel="stylesheet" href="styles.css?v=dev">
 </head>
 <body>
+  <!--
+    Artist campaign banner. Turn it on/off with CAMPAIGN_ON at the top of main.js.
+    While it's off you can preview it by adding ?campaign to the URL.
+  -->
+  <div class="banner" id="banner" hidden>
+    <p class="banner__text"><strong data-i18n="campaign.tag">Now signing</strong><span data-i18n="campaign.text">We're looking for new artists to join 99MGMT.</span></p>
+    <button type="button" class="banner__cta" data-apply data-i18n="campaign.cta">Apply</button>
+    <button type="button" class="banner__close" aria-label="Close">&times;</button>
+  </div>
+
   <header class="nav" id="nav">
     <a href="#top" class="nav__brand" aria-label="99MGMT">
       <img src="assets/mark-160.png" alt="" width="44" height="40">
@@ -198,6 +208,23 @@
     <p>© <span id="year">2026</span> 99MGMT<span data-i18n="footer.part">, part of 99</span></p>
     <a href="#top" data-i18n="footer.top">Back to top</a>
   </footer>
+
+  <dialog class="apply" id="apply" aria-labelledby="apply-title">
+    <form class="apply__form" id="apply-form">
+      <button type="button" class="apply__close" aria-label="Close">&times;</button>
+      <p class="label" data-i18n="campaign.tag">Now signing</p>
+      <h2 class="apply__title" id="apply-title" data-i18n="apply.title">Apply to 99MGMT</h2>
+      <p class="apply__intro" data-i18n="apply.intro">We cover the costs for an introductory period. In return we take a share of your earnings. Terms are agreed with each artist.</p>
+      <label><span data-i18n="apply.name">Your name</span><input name="name" required autocomplete="name"></label>
+      <label><span data-i18n="apply.artist">Artist name</span><input name="artist" required></label>
+      <label><span data-i18n="apply.email">Email</span><input name="email" type="email" required autocomplete="email"></label>
+      <label><span data-i18n="apply.socials">Instagram / TikTok</span><input name="socials" placeholder="@"></label>
+      <label><span data-i18n="apply.music">Link to your music</span><input name="music" type="url" placeholder="https://" required></label>
+      <label><span data-i18n="apply.about">About you</span><textarea name="about" rows="4"></textarea></label>
+      <button type="submit" class="apply__submit" data-i18n="apply.submit">Send application</button>
+      <p class="apply__note"><span data-i18n="apply.note">This opens your email app with the application filled in. You can also DM us on Instagram:</span> <a href="https://instagram.com/99mgmt_" target="_blank" rel="noopener">@99mgmt_</a></p>
+    </form>
+  </dialog>
 
   <script src="main.js?v=dev"></script>
 </body>

@@ -18,16 +18,6 @@
   <link rel="stylesheet" href="styles.css?v=dev">
 </head>
 <body>
-  <!--
-    Artist campaign banner. Turn it on/off with CAMPAIGN_ON at the top of main.js.
-    While it's off you can preview it by adding ?campaign to the URL.
-  -->
-  <div class="banner" id="banner" hidden>
-    <p class="banner__text"><strong data-i18n="campaign.tag">Now signing</strong><span data-i18n="campaign.text">We're looking for new artists to join 99MGMT.</span></p>
-    <button type="button" class="banner__cta" data-apply data-i18n="campaign.cta">Apply</button>
-    <button type="button" class="banner__close" aria-label="Close">&times;</button>
-  </div>
-
   <header class="nav" id="nav">
     <a href="#top" class="nav__brand" aria-label="99MGMT">
       <img src="assets/mark-160.png" alt="" width="44" height="40">
@@ -76,7 +66,28 @@
       <img class="hero__mark reveal" src="assets/mark.png" alt="99MGMT" width="959" height="882">
       <h1 class="hero__title reveal" data-i18n="hero.title">Management for artists, creators &amp; talent.</h1>
       <p class="hero__meta reveal" data-i18n="hero.meta">Copenhagen</p>
+      <!-- Campaign parts (data-campaign) are shown when CAMPAIGN_ON is true in main.js, or with ?campaign in the URL -->
+      <div class="hero__cta" data-campaign hidden>
+        <p><span class="hero__cta-tag" data-i18n="campaign.tag">Now signing</span><span data-i18n="campaign.text">We're looking for new artists.</span></p>
+        <button type="button" class="btn" data-apply data-i18n="campaign.cta">Apply</button>
+      </div>
       <a href="#about" class="hero__scroll" data-i18n="hero.scroll">Scroll</a>
+    </section>
+
+    <section class="section signing" id="signing" data-campaign hidden>
+      <p class="label" data-i18n="campaign.tag">Now signing</p>
+      <div class="about__body">
+        <h2 class="display reveal" data-i18n="signing.title">Join 99MGMT</h2>
+        <div class="about__text reveal">
+          <p data-i18n="signing.p1">We're signing our first artists. For an introductory period we cover the costs of getting your music out. In return we take a share of your earnings. Terms are agreed with each artist.</p>
+          <ul class="signing__list">
+            <li data-i18n="signing.l1">Distribution of your releases</li>
+            <li data-i18n="signing.l2">Promotion and release planning</li>
+            <li data-i18n="signing.l3">Day-to-day management</li>
+          </ul>
+          <button type="button" class="btn btn--solid" data-apply data-i18n="signing.cta">Apply now</button>
+        </div>
+      </div>
     </section>
 
     <section class="section about" id="about">

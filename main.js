@@ -83,8 +83,14 @@ var CAMPAIGN_ON = false;
     'family.wrld': 'Venter på sit første projekt.',
     'contact.email': 'E-mail',
     'campaign.tag': 'Vi signer nu',
-    'campaign.text': 'Vi leder efter nye kunstnere til 99MGMT.',
+    'campaign.text': 'Vi leder efter nye kunstnere.',
     'campaign.cta': 'Ansøg',
+    'signing.title': 'Bliv en del af 99MGMT',
+    'signing.p1': 'Vi signer vores første kunstnere. I en introduktionsperiode dækker vi omkostningerne ved at få din musik ud. Til gengæld tager vi en andel af din indtjening. Vilkårene aftales med hver enkelt kunstner.',
+    'signing.l1': 'Distribution af dine udgivelser',
+    'signing.l2': 'Promovering og udgivelsesplanlægning',
+    'signing.l3': 'Daglig management',
+    'signing.cta': 'Ansøg nu',
     'apply.title': 'Ansøg hos 99MGMT',
     'apply.intro': 'Vi dækker omkostningerne i en introduktionsperiode. Til gengæld tager vi en andel af din indtjening. Vilkårene aftales med hver enkelt kunstner.',
     'apply.name': 'Dit navn',
@@ -129,27 +135,11 @@ var CAMPAIGN_ON = false;
   try { saved = localStorage.getItem('lang'); } catch (e) {}
   if (saved === 'da') setLang('da');
 
-  // Campaign banner
-  var banner = document.getElementById('banner');
-  var DISMISS_KEY = 'campaign-dismissed-1';
-  var preview = /[?&]campaign\b/.test(location.search);
-  var dismissed = false;
-  try { dismissed = localStorage.getItem(DISMISS_KEY) === '1'; } catch (e) {}
-
-  function setBannerHeight() {
-    var h = banner.hidden ? 0 : banner.offsetHeight;
-    document.documentElement.style.setProperty('--banner-h', h + 'px');
+  // Artist campaign
+  if (CAMPAIGN_ON || /[?&]campaign\b/.test(location.search)) {
+    document.querySelectorAll('[data-campaign]').forEach(function (el) { el.hidden = false; });
+    document.documentElement.classList.add('campaign-on');
   }
-  if ((CAMPAIGN_ON && !dismissed) || preview) banner.hidden = false;
-  setBannerHeight();
-  // Keep the nav below the banner when its height changes (resize, language switch)
-  if ('ResizeObserver' in window) new ResizeObserver(setBannerHeight).observe(banner);
-  else window.addEventListener('resize', setBannerHeight);
-  banner.querySelector('.banner__close').addEventListener('click', function () {
-    banner.hidden = true;
-    setBannerHeight();
-    try { localStorage.setItem(DISMISS_KEY, '1'); } catch (e) {}
-  });
 
   // Application form: composes an email to 99MGMT
   var dialog = document.getElementById('apply');

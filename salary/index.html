@@ -98,6 +98,7 @@
   }
   .go:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
   .hint { font-size: 0.75rem; color: var(--dim); line-height: 1.55; text-align: left; margin: 0; }
+  .err.info { color: var(--dim); }
   .err { color: #e8a3a3; font-size: 0.75rem; margin: 0; text-align: left; min-height: 1em; }
 
   .acct-line { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: 0.75rem; color: var(--dim); }
@@ -327,14 +328,25 @@
   <form class="page" id="acct-form" novalidate style="width:min(100%,22rem)">
     <div class="brand">99MS</div>
     <p class="note">Log in to keep your shifts, savings and settings synced on every device.</p>
+    <div class="seg" role="radiogroup" aria-label="How to log in">
+      <input type="radio" name="acct-mode" id="am-code" value="code" checked><label for="am-code">EMAIL ONLY</label>
+      <input type="radio" name="acct-mode" id="am-pass" value="pass"><label for="am-pass">PASSWORD</label>
+    </div>
     <label class="field" for="acct-email"><span>Email</span><input type="email" id="acct-email" autocomplete="username" inputmode="email" placeholder="you@example.com"></label>
-    <label class="field" for="acct-pass"><span>Password</span><input type="password" id="acct-pass" autocomplete="current-password" placeholder="At least 6 characters"></label>
-    <p class="err" id="acct-err"></p>
-    <button class="go" type="submit" data-act="login">Log in</button>
-    <div class="btns" style="grid-template-columns:1fr 1fr">
-      <button class="ghost" type="button" id="acct-cancel">Cancel</button>
+    <div class="sec" id="code-fields">
+      <p class="note" id="code-note">No password needed. We email you a login code, and your account is created the first time.</p>
+      <label class="field" for="acct-code" id="code-wrap" hidden><span>Code from the email</span><input type="text" id="acct-code" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" maxlength="10"></label>
+      <button class="go" type="submit" data-act="send" id="send-btn">Email me a code</button>
+      <button class="go" type="submit" data-act="verify" id="verify-btn" hidden>Log in</button>
+      <button class="link" type="submit" data-act="send" id="resend-btn" hidden style="justify-self:start">Send a new code</button>
+    </div>
+    <div class="sec" id="pass-fields" hidden>
+      <label class="field" for="acct-pass"><span>Password</span><input type="password" id="acct-pass" autocomplete="current-password" placeholder="At least 6 characters"></label>
+      <button class="go" type="submit" data-act="login">Log in</button>
       <button class="ghost" type="submit" data-act="signup">Create account</button>
     </div>
+    <p class="err" id="acct-err"></p>
+    <button class="ghost" type="button" id="acct-cancel">Cancel</button>
   </form>
 </div>
 
@@ -1125,6 +1137,7 @@
   }
 
   const acct = { email: $("acct-email"), pass: $("acct-pass"), err: $("acct-err") };
+  const info = (t) => { acct.err.textContent = t; acct.err.classList.add("info"); };
   let acctAct = "login";
   $("acct-form").querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => { acctAct = b.dataset.act; }));
   $("acct-open").addEventListener("click", async () => {
@@ -1134,32 +1147,67 @@
       toast("Logged out. Your data stays on this device.");
       return;
     }
-    acct.err.textContent = "";
+    acct.err.classList.remove("info"); acct.err.textContent = "";
+    codeUI(false);
     $("acct-sheet").hidden = false;
   });
   $("acct-cancel").addEventListener("click", () => { $("acct-sheet").hidden = true; });
+  // Email-only login: Supabase emails a one-time code (and a link) and creates the account on first use.
+  const codeUI = (sent) => {
+    $("code-wrap").hidden = !sent; $("verify-btn").hidden = !sent; $("resend-btn").hidden = !sent; $("send-btn").hidden = sent;
+    if (sent) setTimeout(() => $("acct-code").focus(), 50);
+  };
+  document.querySelectorAll("input[name=acct-mode]").forEach((r) => r.addEventListener("change", () => {
+    const code = $("am-code").checked;
+    $("code-fields").hidden = !code; $("pass-fields").hidden = code; acct.err.classList.remove("info"); acct.err.textContent = "";
+  }));
+  async function emailOnly(email) {
+    if (acctAct === "send") {
+      info("Sending…");
+      const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: location.origin + location.pathname } });
+      if (error) {
+        acct.err.classList.remove("info"); acct.err.textContent = /rate|seconds/i.test(error.message || "") ? "Too many emails in a short time. Wait a minute and try again." : error.message || "Could not send the email. Try again.";
+        return;
+      }
+      codeUI(true);
+      info(`Sent to ${email}. Enter the code, or tap the link in the email on this device.`);
+      return;
+    }
+    const token = $("acct-code").value.replace(/\s/g, "");
+    if (!/^\d{6,10}$/.test(token)) { acct.err.classList.remove("info"); acct.err.textContent = "Enter the code from the email."; return; }
+    info("Logging in…");
+    const { error } = await sb.auth.verifyOtp({ email, token, type: "email" });
+    if (error) { acct.err.classList.remove("info"); acct.err.textContent = "That code is wrong or has expired. Send a new code."; return; }
+    $("acct-code").value = ""; codeUI(false); acct.err.classList.remove("info"); acct.err.textContent = "";
+    $("acct-sheet").hidden = true; el.sheet.hidden = true;
+    toast("Logged in. Your data now syncs across devices.");
+  }
+
   $("acct-form").addEventListener("submit", async (e) => {
     e.preventDefault();
+    // Enter key: send the code first, then verify it; in password mode, log in.
+    acctAct = (e.submitter && e.submitter.offsetParent !== null && e.submitter.dataset.act) || ($("am-code").checked ? ($("code-wrap").hidden ? "send" : "verify") : "login");
     const email = acct.email.value.trim(), password = acct.pass.value;
-    if (!/^\S+@\S+\.\S+$/.test(email)) { acct.err.textContent = "Enter your email address."; return; }
-    if (password.length < 6) { acct.err.textContent = "The password needs at least 6 characters."; return; }
-    acct.err.textContent = acctAct === "signup" ? "Creating account…" : "Logging in…";
+    if (!/^\S+@\S+\.\S+$/.test(email)) { acct.err.classList.remove("info"); acct.err.textContent = "Enter your email address."; return; }
+    if (acctAct === "send" || acctAct === "verify") return emailOnly(email);
+    if (password.length < 6) { acct.err.classList.remove("info"); acct.err.textContent = "The password needs at least 6 characters."; return; }
+    info(acctAct === "signup" ? "Creating account…" : "Logging in…");
     const res = acctAct === "signup"
       ? await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } })
       : await sb.auth.signInWithPassword({ email, password });
     if (res.error) {
       const m = res.error.message || "";
-      acct.err.textContent = /invalid login/i.test(m) ? "Wrong email or password."
+      acct.err.classList.remove("info"); acct.err.textContent = /invalid login/i.test(m) ? "Wrong email or password."
         : /already registered/i.test(m) ? "That email already has an account. Log in instead."
         : /not confirmed/i.test(m) ? "Confirm your email first. Check your inbox for the link from 99MS."
         : m || "Something went wrong. Try again.";
       return;
     }
     if (acctAct === "signup" && !res.data.session) {
-      acct.err.textContent = "Check your inbox and tap the confirmation link, then log in here.";
+      info("Check your inbox and tap the confirmation link, then log in here.");
       return;
     }
-    acct.pass.value = ""; acct.err.textContent = "";
+    acct.pass.value = ""; acct.err.classList.remove("info"); acct.err.textContent = "";
     $("acct-sheet").hidden = true; el.sheet.hidden = true;
     toast("Logged in. Your data now syncs across devices.");
   });

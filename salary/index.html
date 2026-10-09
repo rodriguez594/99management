@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Salary Clock</title>
+<meta name="theme-color" content="#1f2124">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=IBM+Plex+Sans:wght@400;500&display=swap">
+</head>
+<body>
+<style>
+  /* Layout: one centered readout on an empty field; controls appear only when asked for. */
+  :root {
+    --bg: #1f2124;          /* dark grey, faint cool bias */
+    --fg: #f4f5f6;          /* clock white */
+    --dim: #8a8f96;         /* labels */
+    --faint: #3a3d42;       /* hairlines, inactive */
+    --panel: #26292d;
+    --font-clock: "Share Tech Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: var(--font-ui); font-size: 14px;
+    margin: 0; padding-inline: 16px; overflow: hidden;
+    -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  main {
+    height: 100%; display: grid; place-items: center; text-align: center;
+  }
+  .readout { display: grid; gap: 1.4rem; justify-items: center; width: 100%; cursor: pointer; }
+  .mode {
+    font-size: 0.72rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--dim);
+    background: none; border: 0; padding: 0.4rem 0.6rem; font-family: inherit; cursor: pointer;
+  }
+  .clock {
+    font-family: var(--font-clock); font-variant-numeric: tabular-nums;
+    font-size: var(--clock-size, 12vw); line-height: 1; letter-spacing: 0.02em;
+    white-space: nowrap; color: var(--fg);
+    text-shadow: 0 0 0.35em rgba(244,245,246,0.08);
+  }
+  .clock .cur { font-size: 0.32em; color: var(--dim); margin-right: 0.35em; vertical-align: 0.9em; letter-spacing: 0.08em; }
+  .clock .frac { color: var(--dim); }
+  .rate { font-family: var(--font-clock); font-size: 0.85rem; color: var(--dim); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
+
+  .chrome {
+    position: fixed; inset-inline: 0; bottom: 0;
+    padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    display: flex; justify-content: center; gap: 0.5rem;
+    transition: opacity 0.6s ease;
+  }
+  body.idle .chrome { opacity: 0; pointer-events: none; }
+  body.idle { cursor: none; }
+  .icon-btn {
+    background: none; border: 1px solid var(--faint); color: var(--dim);
+    font: 500 0.72rem/1 var(--font-ui); letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 0.75rem 1rem; border-radius: 999px; cursor: pointer;
+  }
+  .icon-btn:hover, .icon-btn:focus-visible { color: var(--fg); border-color: var(--dim); outline: none; }
+
+  /* Setup sheet */
+  .sheet {
+    position: fixed; inset: 0; background: var(--bg);
+    display: grid; place-items: center; padding: 16px; z-index: 2;
+  }
+  form { width: min(100%, 22rem); display: grid; gap: 1.6rem; }
+  .field { display: grid; gap: 0.55rem; }
+  .field > span { font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--dim); text-align: left; }
+  input[type="text"] {
+    width: 100%; box-sizing: border-box; background: transparent; color: var(--fg);
+    border: 0; border-bottom: 1px solid var(--faint); border-radius: 0;
+    font: 2.4rem/1.2 var(--font-clock); padding: 0.2rem 0 0.4rem; letter-spacing: 0.02em;
+    user-select: text;
+  }
+  input[type="text"]:focus { outline: none; border-bottom-color: var(--fg); }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--faint); border-radius: 999px; padding: 3px; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label {
+    text-align: center; padding: 0.6rem 0; border-radius: 999px; cursor: pointer;
+    font-size: 0.78rem; letter-spacing: 0.14em; color: var(--dim);
+  }
+  .seg input:checked + label { background: var(--fg); color: var(--bg); }
+  .seg input:focus-visible + label { outline: 1px solid var(--fg); outline-offset: 2px; }
+  .go {
+    background: var(--fg); color: var(--bg); border: 0; border-radius: 999px;
+    font: 500 0.78rem/1 var(--font-ui); letter-spacing: 0.24em; text-transform: uppercase;
+    padding: 1.05rem; cursor: pointer;
+  }
+  .go:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+  .hint { font-size: 0.75rem; color: var(--dim); line-height: 1.55; text-align: left; margin: 0; }
+  .err { color: #e8a3a3; font-size: 0.75rem; margin: 0; text-align: left; min-height: 1em; }
+
+  @media (prefers-reduced-motion: reduce) { .chrome { transition: none; } }
+</style>
+
+<main>
+  <div class="readout" id="readout" title="Tap to switch view">
+    <button class="mode" id="mode" type="button">Earned today</button>
+    <div class="clock" id="clock" aria-live="off"><span class="cur" id="cur">DKK</span><span id="int">0</span><span class="frac" id="frac">.0000</span></div>
+    <div class="rate" id="rate">—</div>
+  </div>
+</main>
+
+<div class="chrome" id="chrome">
+  <button class="icon-btn" id="edit" type="button">Salary</button>
+  <button class="icon-btn" id="fs" type="button">Fullscreen</button>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <form id="form" novalidate>
+    <label class="field" for="amount">
+      <span>Your salary</span>
+      <input type="text" id="amount" inputmode="decimal" autocomplete="off" placeholder="600 000" value="600000">
+    </label>
+    <div class="field">
+      <span>Per</span>
+      <div class="seg" role="radiogroup" aria-label="Salary period">
+        <input type="radio" name="period" id="p-year" value="year" checked><label for="p-year">YEAR</label>
+        <input type="radio" name="period" id="p-month" value="month"><label for="p-month">MONTH</label>
+        <input type="radio" name="period" id="p-hour" value="hour"><label for="p-hour">HOUR</label>
+      </div>
+    </div>
+    <div class="field">
+      <span>Currency</span>
+      <div class="seg" role="radiogroup" aria-label="Currency">
+        <input type="radio" name="currency" id="c-dkk" value="DKK" checked><label for="c-dkk">DKK</label>
+        <input type="radio" name="currency" id="c-eur" value="EUR"><label for="c-eur">EUR</label>
+        <input type="radio" name="currency" id="c-usd" value="USD"><label for="c-usd">USD</label>
+      </div>
+    </div>
+    <p class="hint">Counted around the clock, every millisecond of the year. Hourly pay assumes a 37-hour week.</p>
+    <p class="err" id="err"></p>
+    <button class="go" type="submit">Start</button>
+  </form>
+</div>
+
+<script>
+(() => {
+  const MS_YEAR = 365.2425 * 86400000;
+  const HOURS_WEEK = 37;
+  const MODES = [
+    { key: "today",   label: "Earned today" },
+    { key: "session", label: "Since you sat down" },
+    { key: "year",    label: "Earned this year" },
+  ];
+  const $ = (id) => document.getElementById(id);
+  const el = { int: $("int"), frac: $("frac"), cur: $("cur"), rate: $("rate"), mode: $("mode"), clock: $("clock"), sheet: $("sheet"), amount: $("amount"), err: $("err") };
+
+  const store = {
+    get() { try { return JSON.parse(localStorage.getItem("salary-clock") || "null"); } catch { return null; } },
+    set(v) { try { localStorage.setItem("salary-clock", JSON.stringify(v)); } catch {} },
+  };
+
+  const saved = store.get();
+  let cfg = saved && saved.amount > 0 ? saved : { amount: 600000, period: "year", currency: "DKK", mode: 0 };
+  let perMs = 0;
+  const sessionStart = performance.now();
+  const sessionWall = Date.now();
+
+  const grouping = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+  const fmt2 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  function annual(c) {
+    if (c.period === "month") return c.amount * 12;
+    if (c.period === "hour") return c.amount * HOURS_WEEK * 52.1775;
+    return c.amount;
+  }
+
+  function apply() {
+    perMs = annual(cfg) / MS_YEAR;
+    el.cur.textContent = cfg.currency;
+    el.mode.textContent = MODES[cfg.mode].label;
+    const perSec = perMs * 1000, perHour = perSec * 3600;
+    el.rate.textContent = `${perSec.toFixed(4)} / sec   ·   ${fmt2.format(perHour)} / hour`;
+    lastLen = -1;
+  }
+
+  function startOf(key) {
+    const d = new Date();
+    if (key === "today") return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    if (key === "year") return new Date(d.getFullYear(), 0, 1).getTime();
+    return sessionWall;
+  }
+
+  let lastLen = -1;
+  function fit(len) {
+    // Monospace glyphs are ~0.55em wide; leave room for the currency tag.
+    const w = window.innerWidth - 32, h = window.innerHeight;
+    const size = Math.min(w / ((len + 1.6) * 0.56), h * 0.26, 220);
+    el.clock.style.setProperty("--clock-size", size + "px");
+  }
+
+  function frame() {
+    const key = MODES[cfg.mode].key;
+    const elapsed = key === "session" ? performance.now() - sessionStart : Date.now() - startOf(key);
+    const v = Math.max(0, elapsed) * perMs;
+    const whole = Math.floor(v);
+    const intStr = grouping.format(whole);
+    const fracStr = (v - whole).toFixed(4).slice(1);
+    if (el.int.textContent !== intStr) el.int.textContent = intStr;
+    el.frac.textContent = fracStr === ".0000" && v - whole > 0.99995 ? ".9999" : fracStr;
+    const len = intStr.length + 5;
+    if (len !== lastLen) { lastLen = len; fit(len); }
+    requestAnimationFrame(frame);
+  }
+
+  // Mode switching
+  function nextMode() { cfg.mode = (cfg.mode + 1) % MODES.length; store.set(cfg); apply(); }
+  $("readout").addEventListener("click", nextMode);
+
+  // Setup sheet
+  function openSheet() {
+    el.amount.value = String(cfg.amount);
+    document.querySelector(`input[name=period][value=${cfg.period}]`).checked = true;
+    document.querySelector(`input[name=currency][value=${cfg.currency}]`).checked = true;
+    el.err.textContent = "";
+    el.sheet.hidden = false;
+    setTimeout(() => el.amount.focus({ preventScroll: true }), 50);
+  }
+  $("edit").addEventListener("click", (e) => { e.stopPropagation(); openSheet(); });
+  $("form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const raw = el.amount.value.replace(/[\s,']/g, "").replace(/\.(?=.*\.)/g, "");
+    const amount = parseFloat(raw);
+    if (!(amount > 0)) { el.err.textContent = "Enter your salary as a number, for example 600000."; return; }
+    cfg.amount = amount;
+    cfg.period = document.querySelector("input[name=period]:checked").value;
+    cfg.currency = document.querySelector("input[name=currency]:checked").value;
+    store.set(cfg); apply();
+    el.sheet.hidden = true;
+    el.amount.blur();
+    wake();
+  });
+
+  // Fullscreen
+  const fsBtn = $("fs");
+  const canFs = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+  if (!canFs) fsBtn.hidden = true;
+  fsBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const root = document.documentElement;
+    try {
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        await (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen());
+      } else {
+        await (root.requestFullscreen ? root.requestFullscreen({ navigationUI: "hide" }) : root.webkitRequestFullscreen());
+      }
+    } catch { fsBtn.hidden = true; }
+  });
+  const syncFs = () => { fsBtn.textContent = (document.fullscreenElement || document.webkitFullscreenElement) ? "Exit" : "Fullscreen"; };
+  document.addEventListener("fullscreenchange", syncFs);
+  document.addEventListener("webkitfullscreenchange", syncFs);
+  document.addEventListener("keydown", (e) => {
+    if (!el.sheet.hidden) return;
+    if (e.key === "f") fsBtn.click();
+    if (e.key === " " ) { e.preventDefault(); nextMode(); }
+  });
+
+  // Keep the screen on while visible
+  let lock = null;
+  async function wake() {
+    try { if ("wakeLock" in navigator && !lock) { lock = await navigator.wakeLock.request("screen"); lock.addEventListener("release", () => lock = null); } } catch {}
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") wake(); });
+  wake();
+
+  // Fade controls when idle
+  let idleT;
+  function poke() {
+    document.body.classList.remove("idle");
+    clearTimeout(idleT);
+    idleT = setTimeout(() => { if (el.sheet.hidden) document.body.classList.add("idle"); }, 3000);
+  }
+  ["pointermove", "pointerdown", "keydown", "touchstart"].forEach((t) => window.addEventListener(t, poke, { passive: true }));
+  poke();
+
+  window.addEventListener("resize", () => { lastLen = -1; });
+
+  apply();
+  if (!saved) openSheet();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -5,6 +5,7 @@ Portfolio site for 99MGMT (99management.dk). Plain HTML/CSS/JS, no build step.
 - `index.html` – content (edit the roster and contact details here)
 - `styles.css` – dark theme styles
 - `assets/` – logo, favicons, social preview image
+- `salary/` – live salary clock (standalone page at `/salary/`)
 
 Deployed to GitHub Pages by `.github/workflows/pages.yml` on every push.
 

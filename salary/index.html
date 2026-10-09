@@ -106,6 +106,22 @@
   .err.info { color: var(--dim); }
   .err { color: #e8a3a3; font-size: 0.75rem; margin: 0; text-align: left; min-height: 1em; }
 
+  /* Desktop only: corner toggle and a phone-sized frame of the app */
+  .view-toggle {
+    position: fixed; top: 16px; right: 16px; z-index: 7; width: 40px; height: 40px; border-radius: 999px;
+    display: grid; place-items: center; background: none; border: 1px solid var(--faint); color: var(--dim); cursor: pointer;
+    transition: opacity 0.6s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .view-toggle:hover, .view-toggle:focus-visible { color: var(--fg); border-color: var(--dim); outline: none; }
+  .view-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+  body.idle .view-toggle { opacity: 0; }
+  body.phone-host main, body.phone-host .chrome { display: none; }
+  body.phone-host { cursor: default !important; }
+  .phone-stage { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px 16px; box-sizing: border-box; }
+  .phone-stage iframe {
+    width: 390px; height: min(844px, calc(100vh - 48px)); max-width: 100%; border: 0; display: block;
+    border-radius: 36px; background: var(--bg); box-shadow: 0 0 0 10px #15171a, 0 0 0 11px var(--faint), 0 30px 80px rgba(0, 0, 0, 0.45);
+  }
   .otp { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.5rem; }
   .otp input {
     width: 100%; min-width: 0; box-sizing: border-box; aspect-ratio: 3 / 4; max-width: 100%;
@@ -223,6 +239,11 @@
   .toast { position: fixed; left: 50%; top: calc(20px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 0.6rem 1rem; border-radius: 999px; font-size: 0.78rem; letter-spacing: 0.06em; z-index: 5; }
   @media (prefers-reduced-motion: reduce) { .chrome { transition: none; } }
 </style>
+
+<button class="view-toggle" id="view-toggle" type="button" hidden aria-label="Switch to phone view" title="Phone view">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.2"></rect><path d="M11 18.5h2"></path></svg>
+</button>
+<div class="phone-stage" id="phone-stage" hidden></div>
 
 <main>
   <div class="readout" id="readout" title="Tap to switch view">
@@ -401,6 +422,29 @@
 
 <script>
 (() => {
+  // Phone view on desktop: the page shows the app in a phone-sized frame instead of running it full width.
+  const framed = window.self !== window.top;
+  const desktop = matchMedia("(hover: hover) and (pointer: fine)").matches && Math.min(screen.width, window.innerWidth) >= 820;
+  const PV_KEY = "99ms-phone-view";
+  const pvGet = () => { try { return localStorage.getItem(PV_KEY) === "1"; } catch { return false; } };
+  const pvSet = (on) => { try { on ? localStorage.setItem(PV_KEY, "1") : localStorage.removeItem(PV_KEY); } catch {} };
+  const toggle = document.getElementById("view-toggle");
+  if (desktop && !framed) {
+    toggle.hidden = false;
+    toggle.addEventListener("click", () => { pvSet(!pvGet()); location.reload(); });
+    if (pvGet()) {
+      document.body.classList.add("phone-host");
+      toggle.setAttribute("aria-label", "Switch to desktop view"); toggle.title = "Desktop view";
+      toggle.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="19" height="12.5" rx="1.6"></rect><path d="M9 20h6M12 16.5V20"></path></svg>';
+      const stage = document.getElementById("phone-stage");
+      const f = document.createElement("iframe");
+      f.src = location.pathname + "?frame=1";
+      f.title = "99MS phone view";
+      f.allow = "fullscreen; screen-wake-lock";
+      stage.appendChild(f); stage.hidden = false;
+      return; // the framed copy runs the app
+    }
+  }
   const DAY = 86400000;
   const MS_YEAR = 365.2425 * DAY;
   const WORK_HOURS_YEAR = 37 * 52.1775;

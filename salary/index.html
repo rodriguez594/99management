@@ -101,6 +101,32 @@
   .err.info { color: var(--dim); }
   .err { color: #e8a3a3; font-size: 0.75rem; margin: 0; text-align: left; min-height: 1em; }
 
+  .otp { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.5rem; }
+  .otp input {
+    width: 100%; min-width: 0; box-sizing: border-box; aspect-ratio: 3 / 4; max-width: 100%;
+    background: var(--panel); color: var(--fg); border: 1px solid var(--faint); border-radius: 10px;
+    font: 1.8rem/1 var(--font-clock); text-align: center; padding: 0; caret-color: var(--fg); user-select: text;
+    transition: border-color 0.15s ease;
+  }
+  .otp input:focus { outline: none; border-color: var(--fg); }
+  .otp input.filled { border-color: var(--dim); }
+  .otp.bad input { border-color: #e8a3a3; animation: shake 0.35s ease; }
+  @keyframes shake { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+
+  .done { position: fixed; inset: 0; z-index: 6; background: var(--bg); display: grid; place-content: center; justify-items: center; gap: 0.9rem; text-align: center; padding: 16px; }
+  .done svg { width: 96px; height: 96px; }
+  .done .ring, .done .tick { fill: none; stroke: var(--fg); stroke-linecap: round; stroke-linejoin: round; }
+  .done .ring { transform: rotate(-90deg); transform-origin: 48px 48px; stroke-width: 2; stroke-dasharray: 277; stroke-dashoffset: 277; animation: draw 0.6s ease-out forwards; }
+  .done .tick { stroke-width: 4; stroke-dasharray: 60; stroke-dashoffset: 60; animation: draw 0.35s 0.5s ease-out forwards; }
+  .done p { margin: 0; font: 1.2rem/1 var(--font-clock); letter-spacing: 0.24em; text-transform: uppercase; opacity: 0; animation: rise 0.4s 0.75s ease-out forwards; }
+  .done span { font-size: 0.8rem; color: var(--dim); opacity: 0; animation: rise 0.4s 0.9s ease-out forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .done .ring, .done .tick { animation: none; stroke-dashoffset: 0; }
+    .done p, .done span { animation: none; opacity: 1; }
+    .otp.bad input { animation: none; }
+  }
   .acct-line { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: 0.75rem; color: var(--dim); }
   .acct-line span { min-width: 0; overflow-wrap: anywhere; }
   input[type="email"], input[type="password"] {
@@ -335,7 +361,17 @@
     <label class="field" for="acct-email"><span>Email</span><input type="email" id="acct-email" autocomplete="username" inputmode="email" placeholder="you@example.com"></label>
     <div class="sec" id="code-fields">
       <p class="note" id="code-note">No password needed. We email you a login code, and your account is created the first time.</p>
-      <label class="field" for="acct-code" id="code-wrap" hidden><span>Code from the email</span><input type="text" id="acct-code" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" maxlength="10"></label>
+      <div class="field" id="code-wrap" hidden>
+        <span id="code-label">Code from the email</span>
+        <div class="otp" id="otp" role="group" aria-labelledby="code-label">
+          <input type="text" inputmode="numeric" autocomplete="one-time-code" aria-label="Digit 1">
+          <input type="text" inputmode="numeric" autocomplete="off" aria-label="Digit 2">
+          <input type="text" inputmode="numeric" autocomplete="off" aria-label="Digit 3">
+          <input type="text" inputmode="numeric" autocomplete="off" aria-label="Digit 4">
+          <input type="text" inputmode="numeric" autocomplete="off" aria-label="Digit 5">
+          <input type="text" inputmode="numeric" autocomplete="off" aria-label="Digit 6">
+        </div>
+      </div>
       <button class="go" type="submit" data-act="send" id="send-btn">Email me a code</button>
       <button class="go" type="submit" data-act="verify" id="verify-btn" hidden>Log in</button>
       <button class="link" type="submit" data-act="send" id="resend-btn" hidden style="justify-self:start">Send a new code</button>
@@ -348,6 +384,12 @@
     <p class="err" id="acct-err"></p>
     <button class="ghost" type="button" id="acct-cancel">Cancel</button>
   </form>
+</div>
+
+<div class="done" id="done" hidden role="status" aria-live="polite">
+  <svg viewBox="0 0 96 96" aria-hidden="true"><circle class="ring" cx="48" cy="48" r="44"></circle><path class="tick" d="M28 49 L42 63 L69 34"></path></svg>
+  <p>Logged in</p>
+  <span>Your data now syncs across devices</span>
 </div>
 
 <div class="toast" id="toast" role="status" hidden></div>
@@ -653,7 +695,7 @@
   const persist = () => { if (!logStore.set(log)) toast("Could not save. This browser is blocking storage."); scheduleSync(); };
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const money = (n) => fmt2.format(n);
-  const sheets = () => [el.sheet, $("save-sheet"), $("stats-sheet"), $("acct-sheet")];
+  const sheets = () => [el.sheet, $("save-sheet"), $("stats-sheet"), $("acct-sheet"), $("done")];
   function anyOpen() { return sheets().some((x) => !x.hidden); }
 
   let toastT;
@@ -1155,7 +1197,8 @@
   // Email-only login: Supabase emails a one-time code (and a link) and creates the account on first use.
   const codeUI = (sent) => {
     $("code-wrap").hidden = !sent; $("verify-btn").hidden = !sent; $("resend-btn").hidden = !sent; $("send-btn").hidden = sent;
-    if (sent) setTimeout(() => $("acct-code").focus(), 50);
+    clearOtp();
+    if (sent) setTimeout(() => otpBoxes[0].focus(), 50);
   };
   document.querySelectorAll("input[name=acct-mode]").forEach((r) => r.addEventListener("change", () => {
     const code = $("am-code").checked;
@@ -1173,14 +1216,55 @@
       info(`Sent to ${email}. Enter the code, or tap the link in the email on this device.`);
       return;
     }
-    const token = $("acct-code").value.replace(/\s/g, "");
+    const token = otpValue();
     if (!/^\d{6,10}$/.test(token)) { acct.err.classList.remove("info"); acct.err.textContent = "Enter the code from the email."; return; }
     info("Logging in…");
     const { error } = await sb.auth.verifyOtp({ email, token, type: "email" });
-    if (error) { acct.err.classList.remove("info"); acct.err.textContent = "That code is wrong or has expired. Send a new code."; return; }
-    $("acct-code").value = ""; codeUI(false); acct.err.classList.remove("info"); acct.err.textContent = "";
+    if (error) {
+      acct.err.classList.remove("info"); acct.err.textContent = "That code is wrong or has expired. Try again or send a new code.";
+      const o = $("otp"); o.classList.remove("bad"); void o.offsetWidth; o.classList.add("bad");
+      clearOtp(); otpBoxes[0].focus();
+      return;
+    }
+    codeUI(false); acct.err.classList.remove("info"); acct.err.textContent = "";
+    loggedIn();
+  }
+
+  // Six digit boxes: typing moves forward, backspace moves back, paste or autofill fills them all.
+  const otpBoxes = [...$("otp").querySelectorAll("input")];
+  const otpValue = () => otpBoxes.map((b) => b.value).join("");
+  function clearOtp() { otpBoxes.forEach((b) => { b.value = ""; b.classList.remove("filled"); }); }
+  function fillFrom(i, digits) {
+    for (const d of digits) { if (i >= otpBoxes.length) break; otpBoxes[i].value = d; otpBoxes[i].classList.add("filled"); i++; }
+    otpBoxes[Math.min(i, otpBoxes.length - 1)].focus();
+    if (otpValue().length === otpBoxes.length) { $("otp").classList.remove("bad"); acctAct = "verify"; $("acct-form").requestSubmit($("verify-btn")); }
+  }
+  otpBoxes.forEach((b, i) => {
+    b.addEventListener("input", () => {
+      const digits = b.value.replace(/\D/g, "");
+      b.value = ""; b.classList.remove("filled");
+      if (digits) fillFrom(i, digits);
+    });
+    b.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace" && !b.value && i > 0) { otpBoxes[i - 1].value = ""; otpBoxes[i - 1].classList.remove("filled"); otpBoxes[i - 1].focus(); e.preventDefault(); }
+      if (e.key === "ArrowLeft" && i > 0) otpBoxes[i - 1].focus();
+      if (e.key === "ArrowRight" && i < otpBoxes.length - 1) otpBoxes[i + 1].focus();
+    });
+    b.addEventListener("paste", (e) => {
+      const digits = (e.clipboardData || window.clipboardData).getData("text").replace(/\D/g, "");
+      if (!digits) return;
+      e.preventDefault();
+      fillFrom(i, digits);
+    });
+    b.addEventListener("focus", () => b.select());
+  });
+
+  // Checkmark, then back to the clock.
+  function loggedIn() {
+    const d = $("done");
+    d.hidden = false;
     $("acct-sheet").hidden = true; el.sheet.hidden = true;
-    toast("Logged in. Your data now syncs across devices.");
+    setTimeout(() => { d.hidden = true; }, 1900);
   }
 
   $("acct-form").addEventListener("submit", async (e) => {
@@ -1208,8 +1292,7 @@
       return;
     }
     acct.pass.value = ""; acct.err.classList.remove("info"); acct.err.textContent = "";
-    $("acct-sheet").hidden = true; el.sheet.hidden = true;
-    toast("Logged in. Your data now syncs across devices.");
+    loggedIn();
   });
 
   apply();

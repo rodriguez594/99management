@@ -69,10 +69,15 @@
   .icon-btn:hover, .icon-btn:focus-visible { color: var(--fg); border-color: var(--dim); outline: none; }
 
   /* Setup sheet */
+  /* Every sheet scrolls when it is taller than the screen; auto margins keep short ones centred. */
   .sheet {
-    position: fixed; inset: 0; background: var(--bg);
-    display: grid; place-items: center; padding: 16px; z-index: 2;
+    position: fixed; inset: 0; background: var(--bg); z-index: 2;
+    display: grid; grid-template-rows: 1fr; justify-items: center; align-items: start;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    padding: calc(24px + env(safe-area-inset-top, 0px)) 16px calc(32px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
   }
+  .sheet > * { margin-block: auto; }
   form { width: min(100%, 22rem); display: grid; gap: 1.6rem; }
   .field { display: grid; gap: 0.55rem; }
   .field > span { font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--dim); text-align: left; }
@@ -160,7 +165,7 @@
 
 
   /* Save shift + stats */
-  .sheet.scroll { place-items: start center; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-block: calc(24px + env(safe-area-inset-top, 0px)) calc(32px + env(safe-area-inset-bottom, 0px)); }
+  .sheet.scroll > * { margin-block: 0 auto; }
   .page { width: min(100%, 32rem); display: grid; gap: 2.4rem; text-align: left; user-select: text; }
   .page-head { display: flex; justify-content: space-between; align-items: center; }
   .page-head h2, .sec-title { margin: 0; font: 500 0.72rem/1 var(--font-ui); letter-spacing: 0.28em; text-transform: uppercase; color: var(--dim); }

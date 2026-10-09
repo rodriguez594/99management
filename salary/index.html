@@ -1041,7 +1041,10 @@
   // ---------- Account and sync (Supabase) ----------
   // Fill these in from Supabase: Project Settings → API. The anon key is meant to be public;
   // row level security keeps every account's data private.
-  const SYNC = { url: "", anonKey: "" };
+  const SYNC = {
+    url: "https://ayiretwrdtfkeakoinnj.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aXJldHdyZHRma2Vha29pbm5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1MzUwNzQsImV4cCI6MjEwNzExMTA3NH0.HUk_td6OdvWWSr7z-Sfhno3s7dyvUHc7zdrdXENYebE",
+  };
   const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js";
 
   function newest(a, b) { return (b.u || 0) > (a.u || 0) ? b : a; }

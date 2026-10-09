@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Salary Clock</title>
+<title>99TICK</title>
+<meta name="apple-mobile-web-app-title" content="99TICK">
+<meta name="application-name" content="99TICK">
 <meta name="theme-color" content="#1f2124">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,6 +100,7 @@
   .hint { font-size: 0.75rem; color: var(--dim); line-height: 1.55; text-align: left; margin: 0; }
   .err { color: #e8a3a3; font-size: 0.75rem; margin: 0; text-align: left; min-height: 1em; }
 
+  .brand { font: 1.1rem/1 var(--font-clock); letter-spacing: 0.3em; color: var(--fg); text-align: left; }
   .shift-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
   .time-wrap { display: grid; gap: 0.55rem; min-width: 0; }
   .time-wrap > span { font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--dim); text-align: left; display: flex; justify-content: space-between; align-items: baseline; }
@@ -201,6 +204,7 @@
 
 <div class="sheet" id="sheet" hidden>
   <form id="form" novalidate>
+    <div class="brand">99TICK</div>
     <label class="field" for="amount">
       <span>Your salary</span>
       <input type="text" id="amount" inputmode="decimal" autocomplete="off" placeholder="600 000" value="600000">
@@ -458,7 +462,11 @@
       else if (end !== null && now >= end) setLabel("Shift complete");
       else if (open) setLabel(`On break · ${hm(Math.max(60000, now - open.s))}`);
       else if (inSched) setLabel(`On break · ${hm(brk + BREAK_LEN - now)} left`);
-      else setLabel(end === null ? "Earned this shift" : `Earned this shift · ${hm(end - now)} left`);
+      else {
+        const liveHere = log.shifts.find((x) => x.start === start && x.live);
+        const head = liveHere ? (liveHere.savings ? "Saving live" : "Logging live") : "Earned this shift";
+        setLabel(end === null ? head : `${head} · ${hm(end - now)} left`);
+      }
       const ongoing = !done && now >= start && (end === null || now < end);
       syncSaveBtn(now >= start, start, ongoing);
       syncBreakBtn(ongoing, !!open);
@@ -632,7 +640,7 @@
     const x = liveRec();
     if (x) finalize(x, liveStop(x, now));
   }
-  let lastLiveCheck = 0;
+  let lastLiveCheck = 0, lastStatsTick = 0, histLiveIds = "";
   function tickLive(now) {
     if (now - lastLiveCheck > 1000) {
       lastLiveCheck = now;
@@ -643,9 +651,20 @@
         if (!$("stats-sheet").hidden) renderStats();
       }
     }
-    if (!$("stats-sheet").hidden && liveRec()) {
-      $("sv-balance").innerHTML = `<small>${cfg.currency}</small>${money(balance())}`;
-      const la = $("live-amt"); if (la) la.firstChild.textContent = money(amountOf(liveRec()));
+    if (!$("stats-sheet").hidden && now - lastStatsTick > 200 && (liveRec() || runningShift(now))) {
+      lastStatsTick = now;
+      const shifts = statsShifts(now);
+      renderNumbers(shifts);
+      // Keep the history in step: re-render if the running shift appeared or went away.
+      const ids = shifts.filter((x) => x.live || x.unsaved).map((x) => x.id).join();
+      if (ids !== histLiveIds) renderHistory(shifts);
+      else shifts.forEach((x) => {
+        if (!x.live && !x.unsaved) return;
+        const row = document.querySelector(`[data-row="${x.id}"]`);
+        if (!row) return;
+        row.querySelector(".a").firstChild.textContent = money(x.amount);
+        row.querySelector(".t").textContent = rowTimes(x);
+      });
     }
   }
 
@@ -800,19 +819,42 @@
     }, 0);
   }
 
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
   function stat(label, value, sub) {
     return `<div class="stat"><span>${label}</span><b>${value}</b>${sub ? `<em>${sub}</em>` : ""}</div>`;
   }
 
+  // The shift running right now that has not been saved yet, as a stats entry.
+  function runningShift(now = Date.now()) {
+    if (!cfg.shiftStart) return null;
+    const { start, end, brk } = shiftWindow(now);
+    if (now < start || (end !== null && now >= end) || log.shifts.some((x) => x.start === start)) return null;
+    const list = breaksFor(start);
+    return { id: "now", unsaved: true, start, end: now, sched: brk, currency: cfg.currency,
+      amount: paidMs(start, now, brk, list) * workPerMs(), breakMin: Math.round(unpaidMs(start, now, brk, list) / 60000) };
+  }
+
+  // Saved shifts in the current currency, newest first, with live and running shifts at their current value.
+  function statsShifts(now = Date.now()) {
+    const list = log.shifts.filter((x) => x.currency === cfg.currency).map((x) => {
+      if (!x.live) return x;
+      const stop = liveStop(x, now);
+      return { ...x, end: stop, amount: amountOf(x), breakMin: Math.round(unpaidMs(x.start, stop, x.sched, breaksFor(x.start)) / 60000) };
+    });
+    const run = runningShift(now);
+    if (run) list.push(run);
+    return list.sort((a, b) => b.start - a.start);
+  }
+
   function renderStats() {
+    const shifts = statsShifts();
+    renderNumbers(shifts);
+    renderHistory(shifts);
+  }
+
+  function renderNumbers(shifts) {
     const cur = cfg.currency;
-    const shifts = log.shifts.filter((x) => x.currency === cur).sort((a, b) => b.start - a.start)
-      .map((x) => {
-        if (!x.live) return x;
-        const stop = liveStop(x);
-        return { ...x, end: stop, amount: amountOf(x), breakMin: Math.round(unpaidMs(x.start, stop, x.sched, breaksFor(x.start)) / 60000) };
-      });
-    const other = log.shifts.length - shifts.length;
+    const other = log.shifts.filter((x) => x.currency !== cur).length;
     $("sv-balance").innerHTML = `<small>${cur}</small>${money(balance())}`;
 
     const now = Date.now();
@@ -829,18 +871,17 @@
     $("st-grid").innerHTML = [
       stat("Total earned", c(total), other ? `${other} shift${other > 1 ? "s" : ""} in other currencies not counted` : ""),
       stat("Shifts", shifts.length, shifts.length ? `since ${dateFmt.format(shifts[shifts.length - 1].start)}` : ""),
-      stat("This week", c(sum(inRange(wk), "amount")), `${inRange(wk).length} shifts`),
-      stat("This month", c(sum(inRange(mo), "amount")), `${inRange(mo).length} shifts`),
-      stat("This year", c(sum(inRange(yr), "amount")), `${inRange(yr).length} shifts`),
+      stat("This week", c(sum(inRange(wk), "amount")), plural(inRange(wk).length, "shift")),
+      stat("This month", c(sum(inRange(mo), "amount")), plural(inRange(mo).length, "shift")),
+      stat("This year", c(sum(inRange(yr), "amount")), plural(inRange(yr).length, "shift")),
       stat("Hours paid", hm(paid), shifts.length ? `${hm(paid / shifts.length)} per shift` : ""),
       stat("Per shift", shifts.length ? c(total / shifts.length) : "—", "average"),
       stat("Best shift", best ? c(best.amount) : "—", best ? dateFmt.format(best.start) : ""),
-      stat("Most worked day", topDay, shifts.length ? `${Math.max(...byDay)} shifts` : ""),
+      stat("Most worked day", topDay, shifts.length ? plural(Math.max(...byDay), "shift") : ""),
       stat("Breaks taken", shifts.filter((x) => x.breakMin > 0).length, shifts.length ? `${hm(sum(shifts, "breakMin") * 60000)} unpaid` : ""),
     ].join("");
 
     renderChart(shifts, cur);
-    renderHistory(shifts);
   }
 
   function renderChart(shifts, cur) {
@@ -867,6 +908,7 @@
     });
     svg.innerHTML = out;
     const show = (i) => {
+      chartSel = i;
       const w = weeks[i];
       cap.textContent = `Week ${isoWeek(w.from)} · ${cur} ${money(w.amount)} · ${w.n} shift${w.n === 1 ? "" : "s"}`;
       svg.querySelectorAll(".b").forEach((b) => b.classList.toggle("on", +b.dataset.i === i));
@@ -875,23 +917,28 @@
       h.addEventListener("pointerenter", () => show(+h.dataset.i));
       h.addEventListener("click", () => show(+h.dataset.i));
     });
-    show(7);
+    show(chartSel);
   }
+  let chartSel = 7;
+
+  const rowTimes = (x) => `${hhmm(new Date(x.start))}–${x.live || x.unsaved ? "now" : hhmm(new Date(x.end))} · ${hm(paidOf(x))}${x.breakMin ? ` · ${x.breakMin}m break` : ""}`;
 
   function renderHistory(shifts) {
     const box = $("hist");
+    histLiveIds = shifts.filter((x) => x.live || x.unsaved).map((x) => x.id).join();
     if (!shifts.length) {
-      box.innerHTML = `<p class="empty">No shifts saved yet. Set a shift start in Settings, then tap Save shift on the clock when you clock out.</p>`;
+      box.innerHTML = `<p class="empty">No shifts saved yet. Set a shift start in Settings, then tap Save shift on the clock. A shift that is running shows up here live.</p>`;
       return;
     }
     box.innerHTML = shifts.map((x) => `
-      <div class="hist-row">
+      <div class="hist-row" data-row="${x.id}">
         <div class="d">${dateFmt.format(x.start)}</div>
-        <div class="t">${hhmm(new Date(x.start))}–${hhmm(new Date(x.end))} · ${hm(paidOf(x))}${x.breakMin ? ` · ${x.breakMin}m break` : ""}</div>
-        <div class="a"${x.live ? ' id="live-amt"' : ""}>${money(x.amount)}${x.live ? '<i class="live-tag">live now</i>' : x.savings ? "<i>to savings</i>" : ""}</div>
-        <button class="x" type="button" data-id="${x.id}">Delete</button>
+        <div class="t">${rowTimes(x)}</div>
+        <div class="a">${money(x.amount)}${x.unsaved ? '<i class="live-tag">now · not saved</i>' : x.live ? `<i class="live-tag">${x.savings ? "saving live" : "live now"}</i>` : x.savings ? "<i>to savings</i>" : ""}</div>
+        ${x.unsaved ? '<button class="x save-now" type="button">Save</button>' : `<button class="x" type="button" data-id="${x.id}">Delete</button>`}
       </div>`).join("");
-    box.querySelectorAll(".x").forEach((b) => b.addEventListener("click", () => {
+    box.querySelectorAll(".save-now").forEach((b) => b.addEventListener("click", () => { $("stats-sheet").hidden = true; openSave(); }));
+    box.querySelectorAll(".x[data-id]").forEach((b) => b.addEventListener("click", () => {
       if (!b.classList.contains("arm")) {
         b.classList.add("arm"); b.textContent = "Sure?";
         setTimeout(() => { b.classList.remove("arm"); b.textContent = "Delete"; }, 3000);
@@ -928,7 +975,7 @@
     try {
       const blob = new Blob([JSON.stringify({ app: "salary-clock", version: 1, exported: new Date().toISOString(), settings: cfg, ...log }, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob); a.download = `salary-clock-${ymd(new Date())}.json`;
+      a.href = URL.createObjectURL(blob); a.download = `99tick-${ymd(new Date())}.json`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     } catch { $("bk-err").textContent = "This browser blocked the download."; }
@@ -946,7 +993,7 @@
       persist(); saveKey = ""; renderStats();
       $("bk-err").textContent = "";
       toast(`Imported ${ns.length} shifts and ${nv.length} savings entries.`);
-    } catch { $("bk-err").textContent = "That file is not a Salary Clock backup. Pick a file made with Export backup."; }
+    } catch { $("bk-err").textContent = "That file is not a 99TICK backup. Pick a file made with Export backup."; }
   });
 
   $("open-stats").addEventListener("click", (e) => { e.stopPropagation(); renderStats(); $("stats-sheet").hidden = false; $("stats-sheet").scrollTop = 0; });

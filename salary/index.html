@@ -116,7 +116,9 @@
   .link:hover, .link:focus-visible { color: var(--fg); outline: none; }
   .progress { width: min(22rem, 70vw); height: 1px; background: var(--faint); position: relative; }
   .progress i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--fg); }
-  .times { font-family: var(--font-clock); font-size: 0.75rem; color: var(--dim); letter-spacing: 0.08em; display: flex; justify-content: space-between; width: min(22rem, 70vw); }
+  .times { font-family: var(--font-clock); font-size: 0.75rem; color: var(--dim); letter-spacing: 0.08em; display: grid; grid-template-columns: 1fr auto 1fr; width: min(22rem, 70vw); }
+  .times span:first-child { text-align: left; }
+  .times span:last-child { text-align: right; }
 
   @media (prefers-reduced-motion: reduce) { .chrome { transition: none; } }
 </style>
@@ -127,7 +129,7 @@
     <div class="clock" id="clock" aria-live="off"><span class="cur" id="cur">DKK</span><span id="int">0</span><span class="frac" id="frac">.0000</span></div>
     <div class="rate" id="rate">—</div>
     <div class="progress" id="progress" hidden><i id="bar"></i></div>
-    <div class="times" id="times" hidden><span id="t-start"></span><span id="t-end"></span></div>
+    <div class="times" id="times" hidden><span id="t-start"></span><span id="t-break"></span><span id="t-end"></span></div>
   </div>
 </main>
 
@@ -168,7 +170,11 @@
         <input type="time" id="shift-end">
       </label>
     </div>
-    <p class="hint">With a shift set, the clock counts your pay for working hours only (a 37-hour week). The end time is optional. Leave the start empty to count around the clock instead.</p>
+    <label class="time-wrap" for="break-at">
+      <span>Break starts <button class="link" type="button" id="auto-break">Auto</button></span>
+      <input type="time" id="break-at">
+    </label>
+    <p class="hint">With a shift set, the clock counts your pay for working hours only (a 37-hour week). The end time is optional. Shifts over 4.5 hours include an unpaid 30-minute break, and the clock pauses during it. Leave the break time empty and it is placed for you: mid-shift, and never later than 4 hours in. Leave the shift start empty to count around the clock instead.</p>
     <p class="err" id="err"></p>
     <button class="go" type="submit">Start</button>
   </form>
@@ -179,6 +185,9 @@
   const DAY = 86400000;
   const MS_YEAR = 365.2425 * DAY;
   const WORK_HOURS_YEAR = 37 * 52.1775;
+  const HOUR = 3600000;
+  const BREAK_AFTER = 4.5 * HOUR;   // shifts longer than this get a break
+  const BREAK_LEN = 30 * 60000;     // unpaid
   const ALL_MODES = [
     { key: "shift",   label: "Earned this shift" },
     { key: "today",   label: "Earned today" },
@@ -190,6 +199,7 @@
     int: $("int"), frac: $("frac"), cur: $("cur"), rate: $("rate"), mode: $("mode"), clock: $("clock"),
     sheet: $("sheet"), amount: $("amount"), err: $("err"), start: $("shift-start"), end: $("shift-end"),
     progress: $("progress"), bar: $("bar"), times: $("times"), tStart: $("t-start"), tEnd: $("t-end"),
+    tBreak: $("t-break"), breakAt: $("break-at"),
   };
 
   const store = {
@@ -198,7 +208,7 @@
   };
 
   const saved = store.get();
-  let cfg = Object.assign({ amount: 600000, period: "year", currency: "DKK", mode: "today", shiftStart: "", shiftEnd: "" }, saved && saved.amount > 0 ? saved : {});
+  let cfg = Object.assign({ amount: 600000, period: "year", currency: "DKK", mode: "today", shiftStart: "", shiftEnd: "", breakAt: "" }, saved && saved.amount > 0 ? saved : {});
   if (typeof cfg.mode === "number") cfg.mode = "today";
 
   const sessionStart = performance.now();
@@ -224,17 +234,35 @@
   }
 
   // Resolve the shift that is running now, the one about to start, or the one just finished.
-  function shiftWindow(now) {
+  function shiftWindow(now, c = cfg) {
     const d = new Date(now);
-    let start = atTime(d, cfg.shiftStart);
-    let end = cfg.shiftEnd ? atTime(d, cfg.shiftEnd) : null;
+    let start = atTime(d, c.shiftStart);
+    let end = c.shiftEnd ? atTime(d, c.shiftEnd) : null;
     const overnight = end !== null && end <= start;
     if (overnight) end += DAY;
     if (start > now) {
       if (end === null) start -= DAY;                                   // open shift that began last night
       else if (overnight && now < end - DAY) { start -= DAY; end -= DAY; } // overnight shift still running
     }
-    return { start, end };
+    return { start, end, brk: breakStart(start, end, c) };
+  }
+
+  // Start of the unpaid break, or null when the shift is 4.5 hours or shorter.
+  function breakStart(start, end, c = cfg) {
+    if (end !== null && end - start <= BREAK_AFTER) return null;
+    if (c.breakAt) {
+      let b = atTime(new Date(start), c.breakAt);
+      if (b < start) b += DAY;
+      return b;
+    }
+    return start + (end === null ? 4 * HOUR : Math.min(4 * HOUR, (end - start) / 2 - BREAK_LEN / 2));
+  }
+
+  // Paid milliseconds between the shift start and t, minus any break time.
+  function paidUntil(t, start, brk) {
+    const worked = Math.max(0, t - start);
+    if (brk === null) return worked;
+    return worked - Math.max(0, Math.min(t, brk + BREAK_LEN) - Math.max(start, brk));
   }
 
   let lastLen = -1;
@@ -249,6 +277,7 @@
     el.progress.hidden = !(shift && cfg.shiftEnd);
     el.tStart.textContent = cfg.shiftStart;
     el.tEnd.textContent = cfg.shiftEnd || "open";
+    el.tBreak.textContent = "";
     lastLen = -1;
   }
 
@@ -279,11 +308,14 @@
     const now = Date.now();
     let v;
     if (mode.key === "shift") {
-      const { start, end } = shiftWindow(now);
+      const { start, end, brk } = shiftWindow(now);
       const stop = end === null ? now : Math.min(now, end);
-      v = Math.max(0, stop - start) * workPerMs();
+      v = paidUntil(stop, start, brk) * workPerMs();
+      const bText = brk === null ? "" : "break " + new Date(brk).toTimeString().slice(0, 5);
+      if (el.tBreak.textContent !== bText) el.tBreak.textContent = bText;
       if (now < start) setLabel(`Shift starts in ${hm(start - now)}`);
       else if (end !== null && now >= end) setLabel("Shift complete");
+      else if (brk !== null && now >= brk && now < brk + BREAK_LEN) setLabel(`On break · ${hm(brk + BREAK_LEN - now)} left`);
       else setLabel(end === null ? "Earned this shift" : `Earned this shift · ${hm(end - now)} left`);
       if (end !== null) el.bar.style.width = (Math.min(1, Math.max(0, (now - start) / (end - start))) * 100).toFixed(3) + "%";
     } else {
@@ -314,6 +346,7 @@
   const pad = (n) => String(n).padStart(2, "0");
   $("now").addEventListener("click", (e) => { e.preventDefault(); const d = new Date(); el.start.value = `${pad(d.getHours())}:${pad(d.getMinutes())}`; });
   $("clear-end").addEventListener("click", (e) => { e.preventDefault(); el.end.value = ""; });
+  $("auto-break").addEventListener("click", (e) => { e.preventDefault(); el.breakAt.value = ""; });
 
   function openSheet() {
     el.amount.value = String(cfg.amount);
@@ -321,6 +354,7 @@
     document.querySelector(`input[name=currency][value=${cfg.currency}]`).checked = true;
     el.start.value = cfg.shiftStart;
     el.end.value = cfg.shiftEnd;
+    el.breakAt.value = cfg.breakAt;
     el.err.textContent = "";
     el.sheet.hidden = false;
   }
@@ -332,12 +366,19 @@
     if (!(amount > 0)) { el.err.textContent = "Enter your salary as a number, for example 600000."; return; }
     if (el.end.value && !el.start.value) { el.err.textContent = "Add a shift start time, or clear the end time."; return; }
     if (el.end.value && el.end.value === el.start.value) { el.err.textContent = "The shift ends at the same time it starts. Change one of them."; return; }
+    if (el.breakAt.value && !el.start.value) { el.err.textContent = "Add a shift start time, or set the break to Auto."; return; }
+    if (el.breakAt.value && el.end.value) {
+      const c = { shiftStart: el.start.value, shiftEnd: el.end.value, breakAt: el.breakAt.value };
+      const w = shiftWindow(Date.now(), c);
+      if (w.brk !== null && (w.brk < w.start || w.brk + BREAK_LEN > w.end)) { el.err.textContent = "The break has to fit inside the shift. Pick an earlier break time, or set it to Auto."; return; }
+    }
     const hadShift = cfg.shiftStart;
     cfg.amount = amount;
     cfg.period = document.querySelector("input[name=period]:checked").value;
     cfg.currency = document.querySelector("input[name=currency]:checked").value;
     cfg.shiftStart = el.start.value;
     cfg.shiftEnd = el.end.value;
+    cfg.breakAt = el.breakAt.value;
     if (cfg.shiftStart && !hadShift) cfg.mode = "shift";
     store.set(cfg); apply();
     el.sheet.hidden = true;

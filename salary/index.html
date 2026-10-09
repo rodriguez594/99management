@@ -54,7 +54,7 @@
   .chrome {
     position: fixed; inset-inline: 0; bottom: 0;
     padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
-    display: flex; justify-content: center; gap: 0.5rem;
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem;
     transition: opacity 0.6s ease;
   }
   body.idle .chrome { opacity: 0; pointer-events: none; }
@@ -120,6 +120,61 @@
   .times span:first-child { text-align: left; }
   .times span:last-child { text-align: right; }
 
+
+  /* Save shift + stats */
+  .sheet.scroll { place-items: start center; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-block: calc(24px + env(safe-area-inset-top, 0px)) calc(32px + env(safe-area-inset-bottom, 0px)); }
+  .page { width: min(100%, 32rem); display: grid; gap: 2.4rem; text-align: left; user-select: text; }
+  .page-head { display: flex; justify-content: space-between; align-items: center; }
+  .page-head h2, .sec-title { margin: 0; font: 500 0.72rem/1 var(--font-ui); letter-spacing: 0.28em; text-transform: uppercase; color: var(--dim); }
+  .sec { display: grid; gap: 1rem; }
+  .big { font-family: var(--font-clock); font-size: clamp(2.6rem, 12vw, 4rem); line-height: 1; font-variant-numeric: tabular-nums; }
+  .big small { font-size: 0.32em; color: var(--dim); margin-right: 0.4em; vertical-align: 0.9em; letter-spacing: 0.08em; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem 1rem; }
+  .stat { display: grid; gap: 0.35rem; min-width: 0; }
+  .stat span { font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
+  .stat b { font: 400 1.35rem/1.15 var(--font-clock); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .stat em { font-style: normal; font-size: 0.72rem; color: var(--dim); }
+  .inline { display: flex; gap: 0.6rem; align-items: end; }
+  .inline input[type="text"] { font-size: 1.4rem; flex: 1; min-width: 0; }
+  .ghost {
+    background: none; border: 1px solid var(--faint); color: var(--fg); border-radius: 999px;
+    font: 500 0.7rem/1 var(--font-ui); letter-spacing: 0.18em; text-transform: uppercase; padding: 0.8rem 1rem; cursor: pointer; white-space: nowrap;
+  }
+  .ghost:hover, .ghost:focus-visible { border-color: var(--dim); outline: none; }
+  .ghost.danger { color: #e8a3a3; border-color: #5a3a3a; }
+  .row-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .chart { display: grid; gap: 0.6rem; }
+  .chart-cap { font-family: var(--font-clock); font-size: 0.85rem; color: var(--fg); min-height: 1.2em; font-variant-numeric: tabular-nums; }
+  .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .chart rect.hit { fill: transparent; cursor: pointer; }
+  .chart .b { fill: var(--dim); }
+  .chart .b.on { fill: var(--fg); }
+  .chart text { fill: var(--dim); font: 10px var(--font-clock); }
+  .chart line { stroke: var(--faint); stroke-width: 1; }
+  .hist { display: grid; }
+  .hist-row { display: grid; grid-template-columns: 1fr auto auto; gap: 0.2rem 1rem; align-items: center; padding: 0.9rem 0; border-top: 1px solid var(--faint); }
+  .hist-row .d { font-size: 0.85rem; }
+  .hist-row .t { grid-column: 1; font: 0.75rem var(--font-clock); color: var(--dim); }
+  .hist-row .a { grid-row: 1 / span 2; grid-column: 2; font: 1rem var(--font-clock); text-align: right; font-variant-numeric: tabular-nums; }
+  .hist-row .a i { display: block; font: normal 0.65rem var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+  .hist-row .x { grid-row: 1 / span 2; grid-column: 3; background: none; border: 0; color: var(--dim); font: 0.7rem var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; padding: 0.5rem 0; min-width: 3.6rem; text-align: right; }
+  .hist-row .x.arm { color: #e8a3a3; }
+  .empty { color: var(--dim); font-size: 0.85rem; line-height: 1.6; margin: 0; }
+  .note { color: var(--dim); font-size: 0.72rem; line-height: 1.55; margin: 0; }
+  .check { display: flex; gap: 0.8rem; align-items: center; cursor: pointer; font-size: 0.85rem; }
+  .check input { width: 1.2rem; height: 1.2rem; accent-color: var(--fg); margin: 0; }
+  .summary { font-family: var(--font-clock); font-size: 1rem; color: var(--fg); line-height: 1.5; }
+  .summary span { color: var(--dim); font-size: 0.8rem; display: block; }
+  input[type="date"], input[type="number"] {
+    width: 100%; box-sizing: border-box; min-width: 0; background: transparent; color: var(--fg);
+    border: 0; border-bottom: 1px solid var(--faint); border-radius: 0;
+    font: 1.6rem/1.2 var(--font-clock); padding: 0.2rem 0 0.4rem; -webkit-appearance: none; appearance: none; user-select: text;
+  }
+  input[type="date"]:focus, input[type="number"]:focus { outline: none; border-bottom-color: var(--fg); }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+  .btns { display: grid; grid-template-columns: 1fr 2fr; gap: 0.6rem; }
+  .icon-btn:disabled { opacity: 0.45; cursor: default; }
+  .toast { position: fixed; left: 50%; top: calc(20px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 0.6rem 1rem; border-radius: 999px; font-size: 0.78rem; letter-spacing: 0.06em; z-index: 5; }
   @media (prefers-reduced-motion: reduce) { .chrome { transition: none; } }
 </style>
 
@@ -134,6 +189,8 @@
 </main>
 
 <div class="chrome" id="chrome">
+  <button class="icon-btn" id="save-shift" type="button" hidden>Save shift</button>
+  <button class="icon-btn" id="open-stats" type="button">Stats</button>
   <button class="icon-btn" id="edit" type="button">Settings</button>
   <button class="icon-btn" id="fs" type="button">Fullscreen</button>
 </div>
@@ -179,6 +236,71 @@
     <button class="go" type="submit">Start</button>
   </form>
 </div>
+
+<div class="sheet scroll" id="save-sheet" hidden>
+  <form class="page" id="save-form" novalidate>
+    <div class="page-head"><h2>Save shift</h2></div>
+    <label class="field" for="log-date"><span>Date</span><input type="date" id="log-date"></label>
+    <div class="shift-row">
+      <label class="time-wrap" for="log-start"><span>Started</span><input type="time" id="log-start"></label>
+      <label class="time-wrap" for="log-end"><span>Ended</span><input type="time" id="log-end"></label>
+    </div>
+    <label class="time-wrap" for="log-break"><span>Unpaid break, minutes</span><input type="number" id="log-break" inputmode="numeric" min="0" step="5"></label>
+    <div class="summary" id="log-summary">—</div>
+    <label class="check" for="log-savings"><input type="checkbox" id="log-savings" checked> Add this money to savings</label>
+    <p class="err" id="log-err"></p>
+    <div class="btns">
+      <button class="ghost" type="button" id="log-cancel">Cancel</button>
+      <button class="go" type="submit">Save shift</button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet scroll" id="stats-sheet" hidden>
+  <div class="page">
+    <div class="page-head"><h2>Stats</h2><button class="ghost" type="button" id="stats-close">Close</button></div>
+
+    <section class="sec" aria-labelledby="sv-title">
+      <h3 class="sec-title" id="sv-title">Savings account</h3>
+      <div class="big" id="sv-balance"><small>DKK</small>0.00</div>
+      <form class="inline" id="sv-form" novalidate>
+        <label class="field" for="sv-amount" style="flex:1;min-width:0"><span>Amount</span><input type="text" id="sv-amount" inputmode="decimal" autocomplete="off" placeholder="0"></label>
+        <button class="ghost" type="submit" data-dir="-1">Withdraw</button>
+        <button class="ghost" type="submit" data-dir="1">Deposit</button>
+      </form>
+      <p class="err" id="sv-err"></p>
+    </section>
+
+    <section class="sec" aria-labelledby="st-title">
+      <h3 class="sec-title" id="st-title">Earnings</h3>
+      <div class="grid2" id="st-grid"></div>
+    </section>
+
+    <section class="sec chart" aria-labelledby="ch-title">
+      <h3 class="sec-title" id="ch-title">Last 8 weeks</h3>
+      <div class="chart-cap" id="ch-cap"></div>
+      <svg id="ch" viewBox="0 0 320 120" role="img" aria-label="Earnings per week, last 8 weeks"></svg>
+    </section>
+
+    <section class="sec" aria-labelledby="hi-title">
+      <h3 class="sec-title" id="hi-title">Shifts</h3>
+      <div class="hist" id="hist"></div>
+    </section>
+
+    <section class="sec" aria-labelledby="bk-title">
+      <h3 class="sec-title" id="bk-title">Backup</h3>
+      <p class="note">Your shifts and savings are stored in this browser only. Export a backup now and then, and import it on a new phone or after clearing your browser.</p>
+      <div class="row-actions">
+        <button class="ghost" type="button" id="bk-export">Export backup</button>
+        <button class="ghost" type="button" id="bk-import">Import backup</button>
+        <input type="file" id="bk-file" accept="application/json,.json" hidden>
+      </div>
+      <p class="err" id="bk-err"></p>
+    </section>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
 
 <script>
 (() => {
@@ -317,11 +439,13 @@
       else if (end !== null && now >= end) setLabel("Shift complete");
       else if (brk !== null && now >= brk && now < brk + BREAK_LEN) setLabel(`On break · ${hm(brk + BREAK_LEN - now)} left`);
       else setLabel(end === null ? "Earned this shift" : `Earned this shift · ${hm(end - now)} left`);
+      syncSaveBtn(now >= start, start);
       if (end !== null) el.bar.style.width = (Math.min(1, Math.max(0, (now - start) / (end - start))) * 100).toFixed(3) + "%";
     } else {
       const elapsed = mode.key === "session" ? performance.now() - sessionStart : now - startOf(mode.key);
       v = Math.max(0, elapsed) * clockPerMs();
       setLabel(mode.label);
+      syncSaveBtn(false);
     }
     const whole = Math.floor(v);
     const intStr = grouping.format(whole);
@@ -405,7 +529,7 @@
   document.addEventListener("fullscreenchange", syncFs);
   document.addEventListener("webkitfullscreenchange", syncFs);
   document.addEventListener("keydown", (e) => {
-    if (!el.sheet.hidden) return;
+    if (anyOpen()) return;
     if (e.key === "f") fsBtn.click();
     if (e.key === " ") { e.preventDefault(); nextMode(); }
   });
@@ -423,12 +547,278 @@
   function poke() {
     document.body.classList.remove("idle");
     clearTimeout(idleT);
-    idleT = setTimeout(() => { if (el.sheet.hidden) document.body.classList.add("idle"); }, 3000);
+    idleT = setTimeout(() => { if (!anyOpen()) document.body.classList.add("idle"); }, 3000);
   }
   ["pointermove", "pointerdown", "keydown", "touchstart"].forEach((t) => window.addEventListener(t, poke, { passive: true }));
   poke();
 
   window.addEventListener("resize", () => { lastLen = -1; });
+
+
+  // ---------- Shift log, savings and stats ----------
+  const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const logStore = {
+    get() {
+      try {
+        const v = JSON.parse(localStorage.getItem("salary-clock-log") || "null");
+        if (v && Array.isArray(v.shifts) && Array.isArray(v.savings)) return v;
+      } catch {}
+      return { shifts: [], savings: [] };
+    },
+    set(v) { try { localStorage.setItem("salary-clock-log", JSON.stringify(v)); return true; } catch { return false; } },
+  };
+  let log = logStore.get();
+  const persist = () => { if (!logStore.set(log)) toast("Could not save. This browser is blocking storage."); };
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const money = (n) => fmt2.format(n);
+  const sheets = () => [el.sheet, $("save-sheet"), $("stats-sheet")];
+  function anyOpen() { return sheets().some((x) => !x.hidden); }
+
+  let toastT;
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2600);
+  }
+
+  // Save shift button: shown in shift view once the shift has begun.
+  const saveBtn = $("save-shift");
+  let saveKey = "";
+  function syncSaveBtn(show, start) {
+    const saved = show && log.shifts.some((x) => x.start === start);
+    const key = show ? (saved ? "saved" : "open") : "hidden";
+    if (key === saveKey) return;
+    saveKey = key;
+    saveBtn.hidden = !show;
+    saveBtn.disabled = saved;
+    saveBtn.textContent = saved ? "Shift saved" : "Save shift";
+  }
+
+  const f = {
+    date: $("log-date"), start: $("log-start"), end: $("log-end"), brk: $("log-break"),
+    sum: $("log-summary"), toSav: $("log-savings"), err: $("log-err"),
+  };
+  const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const hhmm = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+  function formShift() {
+    if (!f.date.value || !f.start.value || !f.end.value) return null;
+    const [y, mo, d] = f.date.value.split("-").map(Number);
+    const base = new Date(y, mo - 1, d);
+    const start = atTime(base, f.start.value);
+    let end = atTime(base, f.end.value);
+    if (end <= start) end += DAY;
+    const breakMin = Math.max(0, Math.round(Number(f.brk.value) || 0));
+    const paidMs = Math.max(0, end - start - breakMin * 60000);
+    return { start, end, breakMin, paidMs, amount: paidMs * workPerMs() };
+  }
+  function autoBreak() {
+    const s = formShift();
+    if (s) f.brk.value = s.end - s.start > BREAK_AFTER ? 30 : 0;
+  }
+  function renderSummary() {
+    const s = formShift();
+    f.sum.innerHTML = s
+      ? `${cfg.currency} ${money(s.amount)}<span>${hm(s.paidMs)} paid at ${money(workPerMs() * HOUR)} / hour</span>`
+      : "Fill in the date and times.";
+  }
+  [f.date, f.start, f.end].forEach((x) => x.addEventListener("input", () => { autoBreak(); renderSummary(); }));
+  f.brk.addEventListener("input", renderSummary);
+
+  function openSave() {
+    const now = Date.now();
+    const w = shiftWindow(now);
+    const ended = w.end !== null && now >= w.end;
+    f.date.value = ymd(new Date(w.start));
+    f.start.value = cfg.shiftStart;
+    f.end.value = ended ? cfg.shiftEnd : hhmm(new Date(now));
+    autoBreak();
+    if (w.brk !== null && !ended && now < w.brk + BREAK_LEN) f.brk.value = Math.max(0, Math.round(Math.max(0, now - w.brk) / 60000));
+    f.toSav.checked = true;
+    f.err.textContent = "";
+    renderSummary();
+    $("save-sheet").hidden = false;
+  }
+  saveBtn.addEventListener("click", (e) => { e.stopPropagation(); openSave(); });
+  $("log-cancel").addEventListener("click", () => { $("save-sheet").hidden = true; });
+  $("save-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const s = formShift();
+    if (!s) { f.err.textContent = "Fill in the date, start and end time."; return; }
+    if (s.paidMs <= 0) { f.err.textContent = "The break is as long as the shift. Shorten the break."; return; }
+    if (log.shifts.some((x) => x.start === s.start)) { f.err.textContent = "A shift starting at that time is already saved."; return; }
+    const shift = { id: uid(), start: s.start, end: s.end, breakMin: s.breakMin, amount: +s.amount.toFixed(2), currency: cfg.currency, savings: f.toSav.checked };
+    log.shifts.push(shift);
+    if (shift.savings) log.savings.push({ id: uid(), t: s.end, amount: shift.amount, currency: shift.currency, shiftId: shift.id, kind: "shift" });
+    persist();
+    saveKey = "";
+    $("save-sheet").hidden = true;
+    toast(shift.savings ? `Saved. ${shift.currency} ${money(shift.amount)} added to savings.` : "Shift saved.");
+  });
+
+  // Stats
+  const sum = (arr, k) => arr.reduce((a, x) => a + x[k], 0);
+  const paidOf = (x) => x.end - x.start - x.breakMin * 60000;
+  function weekStart(t) {
+    const d = new Date(t); const day = (d.getDay() + 6) % 7; // Monday first
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() - day).getTime();
+  }
+  function isoWeek(t) {
+    const d = new Date(t); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+    const w1 = new Date(d.getFullYear(), 0, 4);
+    return 1 + Math.round(((d - w1) / DAY - 3 + ((w1.getDay() + 6) % 7)) / 7);
+  }
+  const dateFmt = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+
+  function stat(label, value, sub) {
+    return `<div class="stat"><span>${label}</span><b>${value}</b>${sub ? `<em>${sub}</em>` : ""}</div>`;
+  }
+
+  function renderStats() {
+    const cur = cfg.currency;
+    const shifts = log.shifts.filter((x) => x.currency === cur).sort((a, b) => b.start - a.start);
+    const other = log.shifts.length - shifts.length;
+    const bal = sum(log.savings.filter((x) => x.currency === cur), "amount");
+    $("sv-balance").innerHTML = `<small>${cur}</small>${money(bal)}`;
+
+    const now = Date.now();
+    const wk = weekStart(now);
+    const d = new Date(now); const mo = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+    const yr = new Date(d.getFullYear(), 0, 1).getTime();
+    const inRange = (from) => shifts.filter((x) => x.start >= from);
+    const total = sum(shifts, "amount");
+    const paid = shifts.reduce((a, x) => a + paidOf(x), 0);
+    const best = shifts.reduce((b, x) => (!b || x.amount > b.amount ? x : b), null);
+    const byDay = Array(7).fill(0); shifts.forEach((x) => byDay[new Date(x.start).getDay()]++);
+    const topDay = shifts.length ? DAYS[byDay.indexOf(Math.max(...byDay))] : "—";
+    const c = (n) => `${cur} ${money(n)}`;
+    $("st-grid").innerHTML = [
+      stat("Total earned", c(total), other ? `${other} shift${other > 1 ? "s" : ""} in other currencies not counted` : ""),
+      stat("Shifts", shifts.length, shifts.length ? `since ${dateFmt.format(shifts[shifts.length - 1].start)}` : ""),
+      stat("This week", c(sum(inRange(wk), "amount")), `${inRange(wk).length} shifts`),
+      stat("This month", c(sum(inRange(mo), "amount")), `${inRange(mo).length} shifts`),
+      stat("This year", c(sum(inRange(yr), "amount")), `${inRange(yr).length} shifts`),
+      stat("Hours paid", hm(paid), shifts.length ? `${hm(paid / shifts.length)} per shift` : ""),
+      stat("Per shift", shifts.length ? c(total / shifts.length) : "—", "average"),
+      stat("Best shift", best ? c(best.amount) : "—", best ? dateFmt.format(best.start) : ""),
+      stat("Most worked day", topDay, shifts.length ? `${Math.max(...byDay)} shifts` : ""),
+      stat("Breaks taken", shifts.filter((x) => x.breakMin > 0).length, shifts.length ? `${hm(sum(shifts, "breakMin") * 60000)} unpaid` : ""),
+    ].join("");
+
+    renderChart(shifts, cur);
+    renderHistory(shifts);
+  }
+
+  function renderChart(shifts, cur) {
+    const svg = $("ch"), cap = $("ch-cap");
+    const thisWk = weekStart(Date.now());
+    const weeks = [];
+    for (let i = 7; i >= 0; i--) {
+      const from = new Date(thisWk); from.setDate(from.getDate() - i * 7);
+      const to = new Date(from); to.setDate(to.getDate() + 7);
+      const list = shifts.filter((x) => x.start >= from.getTime() && x.start < to.getTime());
+      weeks.push({ from: from.getTime(), amount: sum(list, "amount"), n: list.length });
+    }
+    const W = 320, H = 120, top = 6, base = 100, gap = 10, bw = (W - gap * 7) / 8;
+    const max = Math.max(...weeks.map((w) => w.amount)) || 1;
+    let out = `<line x1="0" x2="${W}" y1="${base}" y2="${base}"></line>`;
+    weeks.forEach((w, i) => {
+      const x = i * (bw + gap);
+      const h = w.amount > 0 ? Math.max(2, (w.amount / max) * (base - top)) : 0;
+      const y = base - h, r = Math.min(4, bw / 2, h);
+      // Rounded top, square base
+      if (h > 0) out += `<path class="b${i === 7 ? " on" : ""}" data-i="${i}" d="M${x},${base} V${y + r} Q${x},${y} ${x + r},${y} H${x + bw - r} Q${x + bw},${y} ${x + bw},${y + r} V${base} Z"></path>`;
+      out += `<text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle">W${isoWeek(w.from)}</text>`;
+      out += `<rect class="hit" data-i="${i}" x="${x - gap / 2}" y="0" width="${bw + gap}" height="${H}"><title>Week ${isoWeek(w.from)}: ${cur} ${money(w.amount)}</title></rect>`;
+    });
+    svg.innerHTML = out;
+    const show = (i) => {
+      const w = weeks[i];
+      cap.textContent = `Week ${isoWeek(w.from)} · ${cur} ${money(w.amount)} · ${w.n} shift${w.n === 1 ? "" : "s"}`;
+      svg.querySelectorAll(".b").forEach((b) => b.classList.toggle("on", +b.dataset.i === i));
+    };
+    svg.querySelectorAll(".hit").forEach((h) => {
+      h.addEventListener("pointerenter", () => show(+h.dataset.i));
+      h.addEventListener("click", () => show(+h.dataset.i));
+    });
+    show(7);
+  }
+
+  function renderHistory(shifts) {
+    const box = $("hist");
+    if (!shifts.length) {
+      box.innerHTML = `<p class="empty">No shifts saved yet. Set a shift start in Settings, then tap Save shift on the clock when you clock out.</p>`;
+      return;
+    }
+    box.innerHTML = shifts.map((x) => `
+      <div class="hist-row">
+        <div class="d">${dateFmt.format(x.start)}</div>
+        <div class="t">${hhmm(new Date(x.start))}–${hhmm(new Date(x.end))} · ${hm(paidOf(x))}${x.breakMin ? ` · ${x.breakMin}m break` : ""}</div>
+        <div class="a">${money(x.amount)}${x.savings ? "<i>to savings</i>" : ""}</div>
+        <button class="x" type="button" data-id="${x.id}">Delete</button>
+      </div>`).join("");
+    box.querySelectorAll(".x").forEach((b) => b.addEventListener("click", () => {
+      if (!b.classList.contains("arm")) {
+        b.classList.add("arm"); b.textContent = "Sure?";
+        setTimeout(() => { b.classList.remove("arm"); b.textContent = "Delete"; }, 3000);
+        return;
+      }
+      const id = b.dataset.id;
+      log.shifts = log.shifts.filter((x) => x.id !== id);
+      log.savings = log.savings.filter((x) => x.shiftId !== id);
+      persist(); saveKey = ""; renderStats();
+      toast("Shift deleted. Its savings deposit was removed too.");
+    }));
+  }
+
+  // Savings deposit / withdraw
+  let svDir = 1;
+  $("sv-form").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { svDir = +b.dataset.dir; }));
+  $("sv-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const err = $("sv-err");
+    const n = parseFloat($("sv-amount").value.replace(/[\s,']/g, ""));
+    if (!(n > 0)) { err.textContent = "Enter an amount above 0."; return; }
+    const bal = sum(log.savings.filter((x) => x.currency === cfg.currency), "amount");
+    if (svDir < 0 && n > bal + 0.001) { err.textContent = `You only have ${cfg.currency} ${money(bal)} saved.`; return; }
+    err.textContent = "";
+    log.savings.push({ id: uid(), t: Date.now(), amount: svDir * +n.toFixed(2), currency: cfg.currency, kind: svDir < 0 ? "withdraw" : "deposit" });
+    persist();
+    $("sv-amount").value = "";
+    renderStats();
+    toast(svDir < 0 ? `Withdrew ${cfg.currency} ${money(n)}.` : `Deposited ${cfg.currency} ${money(n)}.`);
+  });
+
+  // Backup
+  $("bk-export").addEventListener("click", () => {
+    try {
+      const blob = new Blob([JSON.stringify({ app: "salary-clock", version: 1, exported: new Date().toISOString(), settings: cfg, ...log }, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = `salary-clock-${ymd(new Date())}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    } catch { $("bk-err").textContent = "This browser blocked the download."; }
+  });
+  $("bk-import").addEventListener("click", () => $("bk-file").click());
+  $("bk-file").addEventListener("change", async (e) => {
+    const file = e.target.files[0]; e.target.value = "";
+    if (!file) return;
+    try {
+      const v = JSON.parse(await file.text());
+      if (!Array.isArray(v.shifts) || !Array.isArray(v.savings)) throw 0;
+      const have = new Set([...log.shifts, ...log.savings].map((x) => x.id));
+      const ns = v.shifts.filter((x) => !have.has(x.id)), nv = v.savings.filter((x) => !have.has(x.id));
+      log.shifts.push(...ns); log.savings.push(...nv);
+      persist(); saveKey = ""; renderStats();
+      $("bk-err").textContent = "";
+      toast(`Imported ${ns.length} shifts and ${nv.length} savings entries.`);
+    } catch { $("bk-err").textContent = "That file is not a Salary Clock backup. Pick a file made with Export backup."; }
+  });
+
+  $("open-stats").addEventListener("click", (e) => { e.stopPropagation(); renderStats(); $("stats-sheet").hidden = false; $("stats-sheet").scrollTop = 0; });
+  $("stats-close").addEventListener("click", () => { $("stats-sheet").hidden = true; });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { $("stats-sheet").hidden = true; $("save-sheet").hidden = true; }
+  });
 
   apply();
   if (!saved) openSheet();

@@ -174,6 +174,9 @@
   input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
   .btns { display: grid; grid-template-columns: 1fr 2fr; gap: 0.6rem; }
   .icon-btn:disabled { opacity: 0.45; cursor: default; }
+  .icon-btn.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .icon-btn.arm { color: #e8a3a3; border-color: #5a3a3a; }
+  .live-tag { color: var(--fg) !important; }
   .toast { position: fixed; left: 50%; top: calc(20px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 0.6rem 1rem; border-radius: 999px; font-size: 0.78rem; letter-spacing: 0.06em; z-index: 5; }
   @media (prefers-reduced-motion: reduce) { .chrome { transition: none; } }
 </style>
@@ -189,6 +192,7 @@
 </main>
 
 <div class="chrome" id="chrome">
+  <button class="icon-btn" id="break-btn" type="button" hidden>Break now</button>
   <button class="icon-btn" id="save-shift" type="button" hidden>Save shift</button>
   <button class="icon-btn" id="open-stats" type="button">Stats</button>
   <button class="icon-btn" id="edit" type="button">Settings</button>
@@ -240,12 +244,15 @@
 <div class="sheet scroll" id="save-sheet" hidden>
   <form class="page" id="save-form" novalidate>
     <div class="page-head"><h2>Save shift</h2></div>
+    <p class="note" id="log-live-note" hidden>This shift is still going. Its pay goes into savings live, every millisecond, until the shift ends. Tap End shift on the clock when you clock out.</p>
+    <div class="sec" id="log-fields">
     <label class="field" for="log-date"><span>Date</span><input type="date" id="log-date"></label>
     <div class="shift-row">
       <label class="time-wrap" for="log-start"><span>Started</span><input type="time" id="log-start"></label>
       <label class="time-wrap" for="log-end"><span>Ended</span><input type="time" id="log-end"></label>
     </div>
     <label class="time-wrap" for="log-break"><span>Unpaid break, minutes</span><input type="number" id="log-break" inputmode="numeric" min="0" step="5"></label>
+    </div>
     <div class="summary" id="log-summary">—</div>
     <label class="check" for="log-savings"><input type="checkbox" id="log-savings" checked> Add this money to savings</label>
     <p class="err" id="log-err"></p>
@@ -380,12 +387,18 @@
     return start + (end === null ? 4 * HOUR : Math.min(4 * HOUR, (end - start) / 2 - BREAK_LEN / 2));
   }
 
-  // Paid milliseconds between the shift start and t, minus any break time.
-  function paidUntil(t, start, brk) {
-    const worked = Math.max(0, t - start);
-    if (brk === null) return worked;
-    return worked - Math.max(0, Math.min(t, brk + BREAK_LEN) - Math.max(start, brk));
+  // Manual breaks ("Break now") for the shift that started at `start`.
+  const breaksFor = (start) => (cfg.breaks && cfg.breaks.key === start ? cfg.breaks.list : []);
+  const overlap = (a, b, c, d) => Math.max(0, Math.min(b, d) - Math.max(a, c));
+
+  // Unpaid time between the shift start and t. Breaks you take count as they happen; on shifts
+  // over 4.5 hours the scheduled break tops that up to the 30-minute minimum.
+  function unpaidMs(start, t, sched, list) {
+    const manual = list.reduce((a, b) => a + overlap(start, t, b.s, b.e == null ? t : b.e), 0);
+    const auto = sched === null ? 0 : overlap(start, t, sched, sched + BREAK_LEN);
+    return Math.max(manual, auto);
   }
+  const paidMs = (start, t, sched, list) => Math.max(0, t - start) - unpaidMs(start, t, sched, list);
 
   let lastLen = -1;
   function apply() {
@@ -432,21 +445,32 @@
     if (mode.key === "shift") {
       const { start, end, brk } = shiftWindow(now);
       const stop = end === null ? now : Math.min(now, end);
-      v = paidUntil(stop, start, brk) * workPerMs();
+      const list = breaksFor(start);
+      const open = list.find((b) => b.e == null);
+      const done = log.shifts.find((x) => x.start === start && !x.live);
+      v = done ? done.amount : paidMs(start, stop, brk, list) * workPerMs();
+      // Paused on the scheduled break only while it is still topping up to 30 minutes.
+      const inSched = brk !== null && now >= brk && now < brk + BREAK_LEN && unpaidMs(start, now, brk, list) > unpaidMs(start, now, null, list);
       const bText = brk === null ? "" : "break " + new Date(brk).toTimeString().slice(0, 5);
       if (el.tBreak.textContent !== bText) el.tBreak.textContent = bText;
       if (now < start) setLabel(`Shift starts in ${hm(start - now)}`);
+      else if (done) setLabel("Shift complete · saved");
       else if (end !== null && now >= end) setLabel("Shift complete");
-      else if (brk !== null && now >= brk && now < brk + BREAK_LEN) setLabel(`On break · ${hm(brk + BREAK_LEN - now)} left`);
+      else if (open) setLabel(`On break · ${hm(Math.max(60000, now - open.s))}`);
+      else if (inSched) setLabel(`On break · ${hm(brk + BREAK_LEN - now)} left`);
       else setLabel(end === null ? "Earned this shift" : `Earned this shift · ${hm(end - now)} left`);
-      syncSaveBtn(now >= start, start);
+      const ongoing = !done && now >= start && (end === null || now < end);
+      syncSaveBtn(now >= start, start, ongoing);
+      syncBreakBtn(ongoing, !!open);
       if (end !== null) el.bar.style.width = (Math.min(1, Math.max(0, (now - start) / (end - start))) * 100).toFixed(3) + "%";
     } else {
       const elapsed = mode.key === "session" ? performance.now() - sessionStart : now - startOf(mode.key);
       v = Math.max(0, elapsed) * clockPerMs();
       setLabel(mode.label);
       syncSaveBtn(false);
+      syncBreakBtn(false, false);
     }
+    tickLive(now);
     const whole = Math.floor(v);
     const intStr = grouping.format(whole);
     const fracStr = Math.min(v - whole, 0.99994).toFixed(4).slice(1);
@@ -464,7 +488,10 @@
     cfg.mode = list[(i + 1) % list.length].key;
     store.set(cfg); apply();
   }
-  $("readout").addEventListener("click", nextMode);
+  // A tap that only wakes the faded controls should not also switch the view.
+  let wokeControls = false;
+  window.addEventListener("pointerdown", () => { wokeControls = document.body.classList.contains("idle"); }, { capture: true, passive: true });
+  $("readout").addEventListener("click", () => { if (!wokeControls) nextMode(); wokeControls = false; });
 
   // Settings sheet
   const pad = (n) => String(n).padStart(2, "0");
@@ -497,6 +524,7 @@
       if (w.brk !== null && (w.brk < w.start || w.brk + BREAK_LEN > w.end)) { el.err.textContent = "The break has to fit inside the shift. Pick an earlier break time, or set it to Auto."; return; }
     }
     const hadShift = cfg.shiftStart;
+    if (el.start.value !== cfg.shiftStart || el.end.value !== cfg.shiftEnd) endLive(Date.now());
     cfg.amount = amount;
     cfg.period = document.querySelector("input[name=period]:checked").value;
     cfg.currency = document.querySelector("input[name=currency]:checked").value;
@@ -531,6 +559,7 @@
   document.addEventListener("keydown", (e) => {
     if (anyOpen()) return;
     if (e.key === "f") fsBtn.click();
+    if (e.key === "b" && !breakBtn.hidden) toggleBreak();
     if (e.key === " ") { e.preventDefault(); nextMode(); }
   });
 
@@ -580,18 +609,82 @@
     clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2600);
   }
 
-  // Save shift button: shown in shift view once the shift has begun.
+  // Live shifts: saved while still running, their pay flows into savings until they end.
+  const OPEN_SHIFT_CAP = 16 * HOUR; // an open-ended live shift closes itself after 16 hours
+  const liveRec = () => log.shifts.find((x) => x.live);
+  const liveStop = (x, now = Date.now()) => Math.min(now, x.end != null ? x.end : x.start + OPEN_SHIFT_CAP);
+  const amountOf = (x) => (x.live ? paidMs(x.start, liveStop(x), x.sched, breaksFor(x.start)) * workPerMs() : x.amount);
+
+  function finalize(x, at) {
+    const list = breaksFor(x.start).map((b) => ({ s: b.s, e: b.e == null ? at : Math.min(b.e, at) }));
+    const un = unpaidMs(x.start, at, x.sched, list);
+    x.end = at;
+    x.breakMin = Math.round(un / 60000);
+    x.amount = +(Math.max(0, at - x.start - un) * workPerMs()).toFixed(2);
+    delete x.live;
+    const tx = log.savings.find((t) => t.shiftId === x.id);
+    if (tx) { tx.amount = x.amount; tx.t = at; delete tx.live; }
+    persist();
+    saveKey = "";
+    return x;
+  }
+  function endLive(now) {
+    const x = liveRec();
+    if (x) finalize(x, liveStop(x, now));
+  }
+  let lastLiveCheck = 0;
+  function tickLive(now) {
+    if (now - lastLiveCheck > 1000) {
+      lastLiveCheck = now;
+      const x = liveRec();
+      if (x && now >= liveStop(x, Infinity)) {
+        finalize(x, liveStop(x, Infinity));
+        toast(`Shift ended. ${x.currency} ${money(x.amount)} saved.`);
+        if (!$("stats-sheet").hidden) renderStats();
+      }
+    }
+    if (!$("stats-sheet").hidden && liveRec()) {
+      $("sv-balance").innerHTML = `<small>${cfg.currency}</small>${money(balance())}`;
+      const la = $("live-amt"); if (la) la.firstChild.textContent = money(amountOf(liveRec()));
+    }
+  }
+
+  // Save shift button: Save shift, then End shift while live, then Shift saved.
   const saveBtn = $("save-shift");
   let saveKey = "";
-  function syncSaveBtn(show, start) {
-    const saved = show && log.shifts.some((x) => x.start === start);
-    const key = show ? (saved ? "saved" : "open") : "hidden";
-    if (key === saveKey) return;
-    saveKey = key;
+  function syncSaveBtn(show, start, ongoing) {
+    const rec = show ? log.shifts.find((x) => x.start === start) : null;
+    const state = !show ? "hidden" : rec ? (rec.live ? "live" : "saved") : ongoing ? "new-live" : "new";
+    if (state === saveKey) return;
+    saveKey = state;
     saveBtn.hidden = !show;
-    saveBtn.disabled = saved;
-    saveBtn.textContent = saved ? "Shift saved" : "Save shift";
+    saveBtn.disabled = state === "saved";
+    saveBtn.classList.remove("arm");
+    saveBtn.textContent = state === "saved" ? "Shift saved" : state === "live" ? "End shift" : "Save shift";
   }
+
+  // Break now / End break
+  const breakBtn = $("break-btn");
+  let breakKey = "";
+  function syncBreakBtn(show, onBreak) {
+    const key = show ? (onBreak ? "on" : "off") : "hidden";
+    if (key === breakKey) return;
+    breakKey = key;
+    breakBtn.hidden = !show;
+    breakBtn.classList.toggle("on", onBreak);
+    breakBtn.textContent = onBreak ? "End break" : "Break now";
+  }
+  function toggleBreak() {
+    const now = Date.now();
+    const { start } = shiftWindow(now);
+    if (!cfg.breaks || cfg.breaks.key !== start) cfg.breaks = { key: start, list: [] };
+    const open = cfg.breaks.list.find((b) => b.e == null);
+    if (open) { open.e = now; toast(`Back to work. Break was ${hm(Math.max(60000, now - open.s))}.`); }
+    else { cfg.breaks.list.push({ s: now, e: null }); toast("On break. The clock is paused."); }
+    store.set(cfg);
+    breakKey = "";
+  }
+  breakBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleBreak(); });
 
   const f = {
     date: $("log-date"), start: $("log-start"), end: $("log-end"), brk: $("log-break"),
@@ -624,24 +717,54 @@
   [f.date, f.start, f.end].forEach((x) => x.addEventListener("input", () => { autoBreak(); renderSummary(); }));
   f.brk.addEventListener("input", renderSummary);
 
+  let saveLive = false;
   function openSave() {
     const now = Date.now();
     const w = shiftWindow(now);
     const ended = w.end !== null && now >= w.end;
+    saveLive = !ended;
+    $("log-fields").hidden = saveLive;
+    $("log-live-note").hidden = !saveLive;
     f.date.value = ymd(new Date(w.start));
     f.start.value = cfg.shiftStart;
-    f.end.value = ended ? cfg.shiftEnd : hhmm(new Date(now));
-    autoBreak();
-    if (w.brk !== null && !ended && now < w.brk + BREAK_LEN) f.brk.value = Math.max(0, Math.round(Math.max(0, now - w.brk) / 60000));
+    f.end.value = cfg.shiftEnd;
+    f.brk.value = ended ? Math.round(unpaidMs(w.start, w.end, w.brk, breaksFor(w.start)) / 60000) : 0;
     f.toSav.checked = true;
     f.err.textContent = "";
-    renderSummary();
+    if (saveLive) {
+      const so = paidMs(w.start, now, w.brk, breaksFor(w.start)) * workPerMs();
+      f.sum.innerHTML = `${cfg.currency} ${money(so)}<span>earned so far · ${money(workPerMs() * HOUR)} / hour</span>`;
+    } else renderSummary();
     $("save-sheet").hidden = false;
   }
-  saveBtn.addEventListener("click", (e) => { e.stopPropagation(); openSave(); });
+  saveBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (saveKey !== "live") return openSave();
+    if (!saveBtn.classList.contains("arm")) {
+      saveBtn.classList.add("arm"); saveBtn.textContent = "Tap to end";
+      setTimeout(() => { if (saveKey === "live") { saveBtn.classList.remove("arm"); saveBtn.textContent = "End shift"; } }, 3000);
+      return;
+    }
+    const x = liveRec();
+    if (x) { finalize(x, liveStop(x)); toast(`Shift ended. ${x.currency} ${money(x.amount)} saved.`); }
+  });
   $("log-cancel").addEventListener("click", () => { $("save-sheet").hidden = true; });
   $("save-form").addEventListener("submit", (e) => {
     e.preventDefault();
+    if (saveLive) {
+      const now = Date.now();
+      const w = shiftWindow(now);
+      if (log.shifts.some((x) => x.start === w.start)) { f.err.textContent = "This shift is already saved."; return; }
+      endLive(now);
+      const x = { id: uid(), start: w.start, end: w.end, sched: w.brk, breakMin: 0, amount: 0, currency: cfg.currency, savings: f.toSav.checked, live: true };
+      log.shifts.push(x);
+      if (x.savings) log.savings.push({ id: uid(), t: now, amount: 0, currency: x.currency, shiftId: x.id, kind: "shift", live: true });
+      persist();
+      saveKey = "";
+      $("save-sheet").hidden = true;
+      toast(x.savings ? "Saved. Your pay now flows into savings live." : "Saved. The shift is logged live until it ends.");
+      return;
+    }
     const s = formShift();
     if (!s) { f.err.textContent = "Fill in the date, start and end time."; return; }
     if (s.paidMs <= 0) { f.err.textContent = "The break is as long as the shift. Shorten the break."; return; }
@@ -669,16 +792,28 @@
   }
   const dateFmt = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 
+  function balance() {
+    return log.savings.filter((t) => t.currency === cfg.currency).reduce((a, t) => {
+      if (!t.live) return a + t.amount;
+      const x = log.shifts.find((s) => s.id === t.shiftId);
+      return a + (x ? amountOf(x) : 0);
+    }, 0);
+  }
+
   function stat(label, value, sub) {
     return `<div class="stat"><span>${label}</span><b>${value}</b>${sub ? `<em>${sub}</em>` : ""}</div>`;
   }
 
   function renderStats() {
     const cur = cfg.currency;
-    const shifts = log.shifts.filter((x) => x.currency === cur).sort((a, b) => b.start - a.start);
+    const shifts = log.shifts.filter((x) => x.currency === cur).sort((a, b) => b.start - a.start)
+      .map((x) => {
+        if (!x.live) return x;
+        const stop = liveStop(x);
+        return { ...x, end: stop, amount: amountOf(x), breakMin: Math.round(unpaidMs(x.start, stop, x.sched, breaksFor(x.start)) / 60000) };
+      });
     const other = log.shifts.length - shifts.length;
-    const bal = sum(log.savings.filter((x) => x.currency === cur), "amount");
-    $("sv-balance").innerHTML = `<small>${cur}</small>${money(bal)}`;
+    $("sv-balance").innerHTML = `<small>${cur}</small>${money(balance())}`;
 
     const now = Date.now();
     const wk = weekStart(now);
@@ -753,7 +888,7 @@
       <div class="hist-row">
         <div class="d">${dateFmt.format(x.start)}</div>
         <div class="t">${hhmm(new Date(x.start))}–${hhmm(new Date(x.end))} · ${hm(paidOf(x))}${x.breakMin ? ` · ${x.breakMin}m break` : ""}</div>
-        <div class="a">${money(x.amount)}${x.savings ? "<i>to savings</i>" : ""}</div>
+        <div class="a"${x.live ? ' id="live-amt"' : ""}>${money(x.amount)}${x.live ? '<i class="live-tag">live now</i>' : x.savings ? "<i>to savings</i>" : ""}</div>
         <button class="x" type="button" data-id="${x.id}">Delete</button>
       </div>`).join("");
     box.querySelectorAll(".x").forEach((b) => b.addEventListener("click", () => {
@@ -778,7 +913,7 @@
     const err = $("sv-err");
     const n = parseFloat($("sv-amount").value.replace(/[\s,']/g, ""));
     if (!(n > 0)) { err.textContent = "Enter an amount above 0."; return; }
-    const bal = sum(log.savings.filter((x) => x.currency === cfg.currency), "amount");
+    const bal = balance();
     if (svDir < 0 && n > bal + 0.001) { err.textContent = `You only have ${cfg.currency} ${money(bal)} saved.`; return; }
     err.textContent = "";
     log.savings.push({ id: uid(), t: Date.now(), amount: svDir * +n.toFixed(2), currency: cfg.currency, kind: svDir < 0 ? "withdraw" : "deposit" });

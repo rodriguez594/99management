@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>99TICK</title>
-<meta name="apple-mobile-web-app-title" content="99TICK">
-<meta name="application-name" content="99TICK">
+<title>99MS</title>
+<meta name="apple-mobile-web-app-title" content="99MS">
+<meta name="application-name" content="99MS">
 <meta name="theme-color" content="#1f2124">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -100,6 +100,14 @@
   .hint { font-size: 0.75rem; color: var(--dim); line-height: 1.55; text-align: left; margin: 0; }
   .err { color: #e8a3a3; font-size: 0.75rem; margin: 0; text-align: left; min-height: 1em; }
 
+  .acct-line { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: 0.75rem; color: var(--dim); }
+  .acct-line span { min-width: 0; overflow-wrap: anywhere; }
+  input[type="email"], input[type="password"] {
+    width: 100%; box-sizing: border-box; background: transparent; color: var(--fg);
+    border: 0; border-bottom: 1px solid var(--faint); border-radius: 0;
+    font: 1.2rem/1.3 var(--font-ui); padding: 0.3rem 0 0.5rem; user-select: text;
+  }
+  input[type="email"]:focus, input[type="password"]:focus { outline: none; border-bottom-color: var(--fg); }
   .brand { font: 1.1rem/1 var(--font-clock); letter-spacing: 0.3em; color: var(--fg); text-align: left; }
   .shift-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
   .time-wrap { display: grid; gap: 0.55rem; min-width: 0; }
@@ -204,7 +212,7 @@
 
 <div class="sheet" id="sheet" hidden>
   <form id="form" novalidate>
-    <div class="brand">99TICK</div>
+    <div class="brand">99MS</div>
     <label class="field" for="amount">
       <span>Your salary</span>
       <input type="text" id="amount" inputmode="decimal" autocomplete="off" placeholder="600 000" value="600000">
@@ -242,6 +250,10 @@
     <p class="hint">With a shift set, the clock counts your pay for working hours only (a 37-hour week). The end time is optional. Shifts over 4.5 hours include an unpaid 30-minute break, and the clock pauses during it. Leave the break time empty and it is placed for you: mid-shift, and never later than 4 hours in. Leave the shift start empty to count around the clock instead.</p>
     <p class="err" id="err"></p>
     <button class="go" type="submit">Start</button>
+    <div class="acct-line" id="acct-line" hidden>
+      <span id="acct-status">Not logged in</span>
+      <button class="link" type="button" id="acct-open">Log in</button>
+    </div>
   </form>
 </div>
 
@@ -311,6 +323,21 @@
   </div>
 </div>
 
+<div class="sheet" id="acct-sheet" hidden>
+  <form class="page" id="acct-form" novalidate style="width:min(100%,22rem)">
+    <div class="brand">99MS</div>
+    <p class="note">Log in to keep your shifts, savings and settings synced on every device.</p>
+    <label class="field" for="acct-email"><span>Email</span><input type="email" id="acct-email" autocomplete="username" inputmode="email" placeholder="you@example.com"></label>
+    <label class="field" for="acct-pass"><span>Password</span><input type="password" id="acct-pass" autocomplete="current-password" placeholder="At least 6 characters"></label>
+    <p class="err" id="acct-err"></p>
+    <button class="go" type="submit" data-act="login">Log in</button>
+    <div class="btns" style="grid-template-columns:1fr 1fr">
+      <button class="ghost" type="button" id="acct-cancel">Cancel</button>
+      <button class="ghost" type="submit" data-act="signup">Create account</button>
+    </div>
+  </form>
+</div>
+
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
@@ -335,9 +362,14 @@
     tBreak: $("t-break"), breakAt: $("break-at"),
   };
 
+  let sb = null, user = null, syncT = null, syncing = false, lastSynced = 0, syncErr = ""; // account sync state
   const store = {
     get() { try { return JSON.parse(localStorage.getItem("salary-clock") || "null"); } catch { return null; } },
-    set(v) { try { localStorage.setItem("salary-clock", JSON.stringify(v)); } catch {} },
+    set(v, fromSync) {
+      if (!fromSync) v.updatedAt = Date.now();
+      try { localStorage.setItem("salary-clock", JSON.stringify(v)); } catch {}
+      if (!fromSync && typeof scheduleSync === "function") scheduleSync();
+    },
   };
 
   const saved = store.get();
@@ -600,15 +632,16 @@
         const v = JSON.parse(localStorage.getItem("salary-clock-log") || "null");
         if (v && Array.isArray(v.shifts) && Array.isArray(v.savings)) return v;
       } catch {}
-      return { shifts: [], savings: [] };
+      return { shifts: [], savings: [], deleted: [] };
     },
     set(v) { try { localStorage.setItem("salary-clock-log", JSON.stringify(v)); return true; } catch { return false; } },
   };
   let log = logStore.get();
-  const persist = () => { if (!logStore.set(log)) toast("Could not save. This browser is blocking storage."); };
+  if (!Array.isArray(log.deleted)) log.deleted = [];
+  const persist = () => { if (!logStore.set(log)) toast("Could not save. This browser is blocking storage."); scheduleSync(); };
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const money = (n) => fmt2.format(n);
-  const sheets = () => [el.sheet, $("save-sheet"), $("stats-sheet")];
+  const sheets = () => [el.sheet, $("save-sheet"), $("stats-sheet"), $("acct-sheet")];
   function anyOpen() { return sheets().some((x) => !x.hidden); }
 
   let toastT;
@@ -630,8 +663,9 @@
     x.breakMin = Math.round(un / 60000);
     x.amount = +(Math.max(0, at - x.start - un) * workPerMs()).toFixed(2);
     delete x.live;
+    x.u = Date.now();
     const tx = log.savings.find((t) => t.shiftId === x.id);
-    if (tx) { tx.amount = x.amount; tx.t = at; delete tx.live; }
+    if (tx) { tx.amount = x.amount; tx.t = at; tx.u = Date.now(); delete tx.live; }
     persist();
     saveKey = "";
     return x;
@@ -775,9 +809,9 @@
       const w = shiftWindow(now);
       if (log.shifts.some((x) => x.start === w.start)) { f.err.textContent = "This shift is already saved."; return; }
       endLive(now);
-      const x = { id: uid(), start: w.start, end: w.end, sched: w.brk, breakMin: 0, amount: 0, currency: cfg.currency, savings: f.toSav.checked, live: true };
+      const x = { id: uid(), start: w.start, end: w.end, sched: w.brk, breakMin: 0, amount: 0, currency: cfg.currency, savings: f.toSav.checked, live: true, u: now };
       log.shifts.push(x);
-      if (x.savings) log.savings.push({ id: uid(), t: now, amount: 0, currency: x.currency, shiftId: x.id, kind: "shift", live: true });
+      if (x.savings) log.savings.push({ id: uid(), t: now, amount: 0, currency: x.currency, shiftId: x.id, kind: "shift", live: true, u: now });
       persist();
       saveKey = "";
       $("save-sheet").hidden = true;
@@ -788,9 +822,9 @@
     if (!s) { f.err.textContent = "Fill in the date, start and end time."; return; }
     if (s.paidMs <= 0) { f.err.textContent = "The break is as long as the shift. Shorten the break."; return; }
     if (log.shifts.some((x) => x.start === s.start)) { f.err.textContent = "A shift starting at that time is already saved."; return; }
-    const shift = { id: uid(), start: s.start, end: s.end, breakMin: s.breakMin, amount: +s.amount.toFixed(2), currency: cfg.currency, savings: f.toSav.checked };
+    const shift = { id: uid(), start: s.start, end: s.end, breakMin: s.breakMin, amount: +s.amount.toFixed(2), currency: cfg.currency, savings: f.toSav.checked, u: Date.now() };
     log.shifts.push(shift);
-    if (shift.savings) log.savings.push({ id: uid(), t: s.end, amount: shift.amount, currency: shift.currency, shiftId: shift.id, kind: "shift" });
+    if (shift.savings) log.savings.push({ id: uid(), t: s.end, amount: shift.amount, currency: shift.currency, shiftId: shift.id, kind: "shift", u: Date.now() });
     persist();
     saveKey = "";
     $("save-sheet").hidden = true;
@@ -945,6 +979,7 @@
         return;
       }
       const id = b.dataset.id;
+      log.deleted.push(id, ...log.savings.filter((x) => x.shiftId === id).map((x) => x.id));
       log.shifts = log.shifts.filter((x) => x.id !== id);
       log.savings = log.savings.filter((x) => x.shiftId !== id);
       persist(); saveKey = ""; renderStats();
@@ -963,7 +998,7 @@
     const bal = balance();
     if (svDir < 0 && n > bal + 0.001) { err.textContent = `You only have ${cfg.currency} ${money(bal)} saved.`; return; }
     err.textContent = "";
-    log.savings.push({ id: uid(), t: Date.now(), amount: svDir * +n.toFixed(2), currency: cfg.currency, kind: svDir < 0 ? "withdraw" : "deposit" });
+    log.savings.push({ id: uid(), t: Date.now(), amount: svDir * +n.toFixed(2), currency: cfg.currency, kind: svDir < 0 ? "withdraw" : "deposit", u: Date.now() });
     persist();
     $("sv-amount").value = "";
     renderStats();
@@ -975,7 +1010,7 @@
     try {
       const blob = new Blob([JSON.stringify({ app: "salary-clock", version: 1, exported: new Date().toISOString(), settings: cfg, ...log }, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob); a.download = `99tick-${ymd(new Date())}.json`;
+      a.href = URL.createObjectURL(blob); a.download = `99ms-${ymd(new Date())}.json`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     } catch { $("bk-err").textContent = "This browser blocked the download."; }
@@ -993,7 +1028,7 @@
       persist(); saveKey = ""; renderStats();
       $("bk-err").textContent = "";
       toast(`Imported ${ns.length} shifts and ${nv.length} savings entries.`);
-    } catch { $("bk-err").textContent = "That file is not a 99TICK backup. Pick a file made with Export backup."; }
+    } catch { $("bk-err").textContent = "That file is not a 99MS backup. Pick a file made with Export backup."; }
   });
 
   $("open-stats").addEventListener("click", (e) => { e.stopPropagation(); renderStats(); $("stats-sheet").hidden = false; $("stats-sheet").scrollTop = 0; });
@@ -1002,7 +1037,132 @@
     if (e.key === "Escape") { $("stats-sheet").hidden = true; $("save-sheet").hidden = true; }
   });
 
+
+  // ---------- Account and sync (Supabase) ----------
+  // Fill these in from Supabase: Project Settings → API. The anon key is meant to be public;
+  // row level security keeps every account's data private.
+  const SYNC = { url: "", anonKey: "" };
+  const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js";
+
+  function newest(a, b) { return (b.u || 0) > (a.u || 0) ? b : a; }
+  function mergeData(local, remote) {
+    const deleted = [...new Set([...(local.log.deleted || []), ...((remote && remote.log && remote.log.deleted) || [])])];
+    const gone = new Set(deleted);
+    const byId = (a, b) => {
+      const m = new Map();
+      [...a, ...b].forEach((x) => { if (!gone.has(x.id)) m.set(x.id, m.has(x.id) ? newest(m.get(x.id), x) : x); });
+      return [...m.values()];
+    };
+    const r = remote && remote.log ? remote.log : { shifts: [], savings: [] };
+    const rc = remote && remote.cfg;
+    const c = rc && (rc.updatedAt || 0) > (local.cfg.updatedAt || 0) ? { ...rc, mode: local.cfg.mode } : local.cfg;
+    return { cfg: c, log: { shifts: byId(local.log.shifts, r.shifts || []), savings: byId(local.log.savings, r.savings || []), deleted } };
+  }
+
+  function scheduleSync(delay = 1200) {
+    if (!user) return;
+    clearTimeout(syncT);
+    syncT = setTimeout(syncNow, delay);
+  }
+
+  async function syncNow() {
+    if (!sb || !user || syncing) return;
+    syncing = true;
+    try {
+      const { data: row, error } = await sb.from("user_data").select("data").eq("user_id", user.id).maybeSingle();
+      if (error) throw error;
+      const merged = mergeData({ cfg, log }, row && row.data);
+      const { error: upErr } = await sb.from("user_data").upsert({ user_id: user.id, data: merged, updated_at: new Date().toISOString() });
+      if (upErr) throw upErr;
+      const changed = JSON.stringify(merged.cfg) !== JSON.stringify(cfg) || JSON.stringify(merged.log) !== JSON.stringify(log);
+      if (changed) {
+        cfg = merged.cfg; log = merged.log;
+        store.set(cfg, true); logStore.set(log);
+        apply(); saveKey = ""; breakKey = "";
+        if (!$("stats-sheet").hidden) renderStats();
+      }
+      lastSynced = Date.now(); syncErr = "";
+    } catch (e) {
+      syncErr = navigator.onLine === false ? "Offline. Will sync when you are back online." : "Sync failed. Retrying soon.";
+    } finally {
+      syncing = false;
+      renderAcct();
+    }
+  }
+
+  function renderAcct() {
+    if (!sb) return;
+    $("acct-line").hidden = false;
+    $("acct-open").textContent = user ? "Log out" : "Log in";
+    $("acct-status").textContent = !user ? "Log in to sync across devices"
+      : syncErr || (lastSynced ? `Synced as ${user.email} · ${hhmm(new Date(lastSynced))}` : `Logged in as ${user.email}`);
+  }
+
+  function loadScript(src) {
+    return new Promise((res, rej) => { const t = document.createElement("script"); t.src = src; t.onload = res; t.onerror = rej; document.head.appendChild(t); });
+  }
+
+  async function initSync() {
+    if (!SYNC.url || !SYNC.anonKey) return;
+    try { await loadScript(SUPABASE_JS); } catch { return; }
+    sb = window.supabase.createClient(SYNC.url, SYNC.anonKey, { auth: { persistSession: true, autoRefreshToken: true } });
+    const { data } = await sb.auth.getSession();
+    user = data.session ? data.session.user : null;
+    sb.auth.onAuthStateChange((_e, session) => {
+      const was = user && user.id;
+      user = session ? session.user : null;
+      renderAcct();
+      if (user && user.id !== was) syncNow();
+    });
+    renderAcct();
+    if (user) syncNow();
+    setInterval(() => { if (user && document.visibilityState === "visible") syncNow(); }, 20000);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") scheduleSync(100); });
+    window.addEventListener("online", () => scheduleSync(100));
+  }
+
+  const acct = { email: $("acct-email"), pass: $("acct-pass"), err: $("acct-err") };
+  let acctAct = "login";
+  $("acct-form").querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => { acctAct = b.dataset.act; }));
+  $("acct-open").addEventListener("click", async () => {
+    if (user) {
+      await sb.auth.signOut();
+      user = null; renderAcct();
+      toast("Logged out. Your data stays on this device.");
+      return;
+    }
+    acct.err.textContent = "";
+    $("acct-sheet").hidden = false;
+  });
+  $("acct-cancel").addEventListener("click", () => { $("acct-sheet").hidden = true; });
+  $("acct-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = acct.email.value.trim(), password = acct.pass.value;
+    if (!/^\S+@\S+\.\S+$/.test(email)) { acct.err.textContent = "Enter your email address."; return; }
+    if (password.length < 6) { acct.err.textContent = "The password needs at least 6 characters."; return; }
+    acct.err.textContent = acctAct === "signup" ? "Creating account…" : "Logging in…";
+    const res = acctAct === "signup"
+      ? await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } })
+      : await sb.auth.signInWithPassword({ email, password });
+    if (res.error) {
+      const m = res.error.message || "";
+      acct.err.textContent = /invalid login/i.test(m) ? "Wrong email or password."
+        : /already registered/i.test(m) ? "That email already has an account. Log in instead."
+        : /not confirmed/i.test(m) ? "Confirm your email first. Check your inbox for the link from 99MS."
+        : m || "Something went wrong. Try again.";
+      return;
+    }
+    if (acctAct === "signup" && !res.data.session) {
+      acct.err.textContent = "Check your inbox and tap the confirmation link, then log in here.";
+      return;
+    }
+    acct.pass.value = ""; acct.err.textContent = "";
+    $("acct-sheet").hidden = true; el.sheet.hidden = true;
+    toast("Logged in. Your data now syncs across devices.");
+  });
+
   apply();
+  initSync();
   if (!saved) openSheet();
   requestAnimationFrame(frame);
 })();

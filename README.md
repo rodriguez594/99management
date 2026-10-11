@@ -5,7 +5,7 @@ Portfolio site for 99MGMT (99management.dk). Plain HTML/CSS/JS, no build step.
 - `index.html` – content (edit the roster and contact details here)
 - `styles.css` – dark theme styles
 - `assets/` – logo, favicons, social preview image
-- `salary/` – 99MS, live salary clock (standalone page at `/salary/`)
+- `salary/` – forwards to 99MS at https://99ms.dk (the app itself lives in the `rodriguez594/99ms` repo)
 
 Deployed to GitHub Pages by `.github/workflows/pages.yml` on every push.
 
@@ -15,7 +15,7 @@ Deployed to GitHub Pages by `.github/workflows/pages.yml` on every push.
 3. In repo Settings → Pages, set the custom domain and tick "Enforce HTTPS".
 
 ## 99MS account sync (Supabase)
-`salary/index.html` has a `SYNC` config (`url`, `anonKey`). Leave it empty and 99MS works offline only. To turn on sync, create a Supabase project and run this in its SQL editor:
+`index.html` in the `rodriguez594/99ms` repo has a `SYNC` config (`url`, `anonKey`). Leave it empty and 99MS works offline only. To turn on sync, create a Supabase project and run this in its SQL editor:
 
 ```sql
 create table public.user_data (
